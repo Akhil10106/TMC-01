@@ -1,4 +1,3 @@
-// Initialize data from localStorage or empty arrays
 let teachers = JSON.parse(localStorage.getItem("teachers")) || [];
 let assignments = JSON.parse(localStorage.getItem("assignments")) || [];
 let currentYear = new Date().getFullYear().toString();
@@ -7,15 +6,21 @@ let shifts = JSON.parse(localStorage.getItem("shifts")) || [];
 let packetCodes = JSON.parse(localStorage.getItem("packetCodes")) || [];
 let totalExamsOptions = JSON.parse(localStorage.getItem("totalExamsOptions")) || [];
 
-// Load initial data
 window.onload = function() {
     loadTeachers();
     loadAssignments();
 };
 
+function closeTab() {
+    const tabOverlay = document.getElementById("tabOverlay");
+    tabOverlay.style.display = "none";
+    tabOverlay.innerHTML = "";
+}
+
 function showTeacherForm() {
     const form = `
         <form id="teacherForm">
+            <button class="close-btn" onclick="closeTab()">✕</button>
             <h3>Add Teacher</h3>
             <label>Add Teacher Name</label>
             <input type="text" id="teacherName" placeholder="Name">
@@ -25,7 +30,9 @@ function showTeacherForm() {
             <input type="text" id="teacherPhone" placeholder="Phone">
             <button type="button" onclick="addTeacher()">Save Teacher</button>
         </form>`;
-    document.getElementById("dashboard").innerHTML += form;
+    const tabOverlay = document.getElementById("tabOverlay");
+    tabOverlay.innerHTML = form;
+    tabOverlay.style.display = "flex";
 }
 
 function addTeacher() {
@@ -36,16 +43,68 @@ function addTeacher() {
         phone: document.getElementById("teacherPhone").value
     };
     teachers.push(teacher);
-    localStorage.setItem("teachers", JSON.stringify(teachers)); // Save to localStorage
-    document.getElementById("teacherForm").remove();
+    localStorage.setItem("teachers", JSON.stringify(teachers));
+    closeTab();
     loadTeachers();
+}
+
+function editTeacher(id) {
+    const teacher = teachers.find(t => t.id === id);
+    const form = `
+        <form id="editTeacherForm">
+            <button class="close-btn" onclick="closeTab()">✕</button>
+            <h3>Edit Teacher</h3>
+            <label>Edit Teacher Name</label>
+            <input type="text" id="editTeacherName" value="${teacher.name}">
+            <label>Edit Teacher Email</label>
+            <input type="email" id="editTeacherEmail" value="${teacher.email}">
+            <label>Edit Teacher Phone</label>
+            <input type="text" id="editTeacherPhone" value="${teacher.phone}">
+            <button type="button" onclick="saveTeacherEdit('${id}')">Save Changes</button>
+        </form>`;
+    const tabOverlay = document.getElementById("tabOverlay");
+    tabOverlay.innerHTML = form;
+    tabOverlay.style.display = "flex";
+}
+
+function saveTeacherEdit(id) {
+    const teacherIndex = teachers.findIndex(t => t.id === id);
+    teachers[teacherIndex] = {
+        id: id,
+        name: document.getElementById("editTeacherName").value,
+        email: document.getElementById("editTeacherEmail").value,
+        phone: document.getElementById("editTeacherPhone").value
+    };
+    localStorage.setItem("teachers", JSON.stringify(teachers));
+    closeTab();
+    loadTeachers();
+    loadAssignments();
+}
+
+function deleteTeacher(id) {
+    if (confirm("Are you sure? This will also delete all assignments for this teacher.")) {
+        teachers = teachers.filter(t => t.id !== id);
+        assignments = assignments.filter(a => a.teacherId !== id);
+        localStorage.setItem("teachers", JSON.stringify(teachers));
+        localStorage.setItem("assignments", JSON.stringify(assignments));
+        loadTeachers();
+        loadAssignments();
+    }
 }
 
 function loadTeachers() {
     const tableBody = document.querySelector("#teacherTable tbody");
     tableBody.innerHTML = "";
     teachers.forEach(teacher => {
-        const row = `<tr><td>${teacher.name}</td><td>${teacher.email}</td><td>${teacher.phone}</td></tr>`;
+        const row = `<tr>
+            <td data-label="Name">${teacher.name}</td>
+            <td data-label="Email">${teacher.email}</td>
+            <td data-label="Phone">${teacher.phone}</td>
+            <td data-label="Actions">
+                <button class="action-btn edit-btn" onclick="editTeacher('${teacher.id}')">Edit</button>
+                <button class="action-btn delete-btn" onclick="deleteTeacher('${teacher.id}')">Delete</button>
+            </td>
+        </tr>`;
         tableBody.innerHTML += row;
     });
 }
@@ -53,6 +112,7 @@ function loadTeachers() {
 function showSetupForm() {
     const form = `
         <form id="setupForm">
+            <button class="close-btn" onclick="closeTab()">✕</button>
             <h3>Setup Options</h3>
             <label>Select Subject Code</label>
             <input type="text" id="subjectCodesInput" placeholder="e.g., MATH101, ENG102" value="${subjectCodes.join(", ")}">
@@ -64,7 +124,9 @@ function showSetupForm() {
             <input type="text" id="totalExamsInput" placeholder="e.g., 25, 50, 100" value="${totalExamsOptions.join(", ")}">
             <button type="button" onclick="saveSetup()">Save Options</button>
         </form>`;
-    document.getElementById("dashboard").innerHTML += form;
+    const tabOverlay = document.getElementById("tabOverlay");
+    tabOverlay.innerHTML = form;
+    tabOverlay.style.display = "flex";
 }
 
 function saveSetup() {
@@ -72,18 +134,14 @@ function saveSetup() {
     shifts = document.getElementById("shiftsInput").value.split(",").map(s => s.trim());
     packetCodes = document.getElementById("packetCodesInput").value.split(",").map(s => s.trim());
     totalExamsOptions = document.getElementById("totalExamsInput").value.split(",").map(s => s.trim());
-    
-    // Save to localStorage
     localStorage.setItem("subjectCodes", JSON.stringify(subjectCodes));
     localStorage.setItem("shifts", JSON.stringify(shifts));
     localStorage.setItem("packetCodes", JSON.stringify(packetCodes));
     localStorage.setItem("totalExamsOptions", JSON.stringify(totalExamsOptions));
-    
-    document.getElementById("setupForm").remove();
-    alert("Options saved!");
+    closeTab();
 }
 
-function showAssignmentForm() {
+function showAssignmentForm(assignmentId = null) {
     let teacherOptions = '<option value="">Select Teacher</option>';
     teachers.forEach(teacher => {
         teacherOptions += `<option value="${teacher.id}">${teacher.name} (${teacher.id})</option>`;
@@ -109,9 +167,11 @@ function showAssignmentForm() {
         totalExamsOptionsHtml += `<option value="${num}">${num}</option>`;
     });
 
+    const assignment = assignmentId ? assignments.find(a => a.id === assignmentId) : null;
     const form = `
         <form id="assignForm">
-            <h3>Assign Task</h3>
+            <button class="close-btn" onclick="closeTab()">✕</button>
+            <h3>${assignment ? "Edit Task" : "Assign Task"}</h3>
             <label>Select Teacher</label>
             <select id="teacherId">${teacherOptions}</select>
             <label>Select Subject Code</label>
@@ -123,16 +183,26 @@ function showAssignmentForm() {
             <label>Select Total Exams</label>
             <select id="totalExams">${totalExamsOptionsHtml}</select>
             <label>Exam Type</label>
-            <input type="text" id="examType" placeholder="Exam Type">
-            <label><input type="checkbox" id="isExternal"> External</label>
-            <button type="button" onclick="saveAssignment()">Save Assignment</button>
+            <input type="text" id="examType" placeholder="Exam Type" value="${assignment ? assignment.examType : ""}">
+            <label><input type="checkbox" id="isExternal" ${assignment && assignment.isExternal ? "checked" : ""}> External</label>
+            <button type="button" onclick="saveAssignment('${assignment ? assignment.id : null}')">Save ${assignment ? "Changes" : "Assignment"}</button>
         </form>`;
-    document.getElementById("dashboard").innerHTML += form;
+    const tabOverlay = document.getElementById("tabOverlay");
+    tabOverlay.innerHTML = form;
+    tabOverlay.style.display = "flex";
+
+    if (assignment) {
+        document.getElementById("teacherId").value = assignment.teacherId;
+        document.getElementById("subjectCode").value = assignment.subjectCode;
+        document.getElementById("shift").value = assignment.shift;
+        document.getElementById("packetCode").value = assignment.packetCode;
+        document.getElementById("totalExams").value = assignment.totalExams;
+    }
 }
 
-function saveAssignment() {
+function saveAssignment(assignmentId) {
     const assignment = {
-        id: "a" + (assignments.length + 1),
+        id: assignmentId || "a" + (assignments.length + 1),
         teacherId: document.getElementById("teacherId").value,
         subjectCode: document.getElementById("subjectCode").value,
         shift: document.getElementById("shift").value,
@@ -143,10 +213,29 @@ function saveAssignment() {
         date: new Date().toISOString().split("T")[0],
         year: currentYear
     };
-    assignments.push(assignment);
-    localStorage.setItem("assignments", JSON.stringify(assignments)); // Save to localStorage
-    document.getElementById("assignForm").remove();
+
+    if (assignmentId) {
+        const index = assignments.findIndex(a => a.id === assignmentId);
+        assignments[index] = assignment;
+    } else {
+        assignments.push(assignment);
+    }
+
+    localStorage.setItem("assignments", JSON.stringify(assignments));
+    closeTab();
     loadAssignments();
+}
+
+function editAssignment(id) {
+    showAssignmentForm(id);
+}
+
+function deleteAssignment(id) {
+    if (confirm("Are you sure you want to delete this assignment?")) {
+        assignments = assignments.filter(a => a.id !== id);
+        localStorage.setItem("assignments", JSON.stringify(assignments));
+        loadAssignments();
+    }
 }
 
 function loadAssignments() {
@@ -155,13 +244,17 @@ function loadAssignments() {
     assignments.forEach(assignment => {
         const teacher = teachers.find(t => t.id === assignment.teacherId)?.name || "Unknown";
         const row = `<tr>
-            <td>${teacher}</td>
-            <td>${assignment.subjectCode}</td>
-            <td>${assignment.shift}</td>
-            <td>${assignment.packetCode}</td>
-            <td>${assignment.totalExams}</td>
-            <td>${assignment.examType}</td>
-            <td>${assignment.isExternal ? "Yes" : "No"}</td>
+            <td data-label="Teacher">${teacher}</td>
+            <td data-label="Subject">${assignment.subjectCode}</td>
+            <td data-label="Shift">${assignment.shift}</td>
+            <td data-label="Packet">${assignment.packetCode}</td>
+            <td data-label="Exams">${assignment.totalExams}</td>
+            <td data-label="Type">${assignment.examType}</td>
+            <td data-label="External">${assignment.isExternal ? "Yes" : "No"}</td>
+            <td data-label="Actions">
+                <button class="action-btn edit-btn" onclick="editAssignment('${assignment.id}')">Edit</button>
+                <button class="action-btn delete-btn" onclick="deleteAssignment('${assignment.id}')">Delete</button>
+            </td>
         </tr>`;
         tableBody.innerHTML += row;
     });
@@ -169,17 +262,5 @@ function loadAssignments() {
 
 function showRecords() {
     const recordsDiv = document.getElementById("records");
-    recordsDiv.style.display = "block";
-    const tableBody = document.querySelector("#recordsTable tbody");
-    tableBody.innerHTML = "";
-    assignments.forEach(assignment => {
-        const teacher = teachers.find(t => t.id === assignment.teacherId)?.name || "Unknown";
-        const row = `<tr>
-            <td>${assignment.year}</td>
-            <td>${teacher}</td>
-            <td>${assignment.subjectCode}</td>
-            <td>${assignment.totalExams}</td>
-        </tr>`;
-        tableBody.innerHTML += row;
-    });
+    recordsDiv.style.display = recordsDiv.style.display === "block" ? "none" : "block";
 }
