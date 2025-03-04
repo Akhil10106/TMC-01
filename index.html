@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMC Website</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="dashboard" class="container">
+        <header class="header">
+            <h1>TMC Dashboard</h1>
+            <div class="controls">
+                <select id="themeSelect" onchange="changeTheme()">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+                <div class="icon-group">
+                    <button class="icon-btn" onclick="showTeacherForm()" title="Add Teacher">👩‍🏫</button>
+                    <button class="icon-btn" onclick="showSetupForm()" title="Setup Options">⚙️</button>
+                    <button class="icon-btn" onclick="showAssignmentForm()" title="Assign Task">📝</button>
+                    <button class="icon-btn" onclick="showRecords()" title="View Records">📊</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="card-grid">
+            <div class="card">
+                <h2>Teachers</h2>
+                <table id="teacherTable">
+                    <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Assignments</h2>
+                <table id="assignmentTable">
+                    <thead><tr><th>Teacher</th><th>Subject</th><th>Shift</th><th>Packet</th><th>Exams</th><th>Type</th><th>External</th><th>Actions</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div id="records" class="card" style="display:none;">
+                <h2>Annual Records</h2>
+                <table id="recordsTable">
+                    <thead><tr><th>Year</th><th>Teacher</th><th>Subject</th><th>Exams</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tabOverlay" class="tab-overlay" style="display:none;"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

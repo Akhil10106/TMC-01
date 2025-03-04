@@ -1,0 +1,429 @@
+/* CSS Variables for Themes */
+:root {
+    /* Light Theme (Default) */
+    --bg-color: linear-gradient(135deg, #e0e7ff 0%, #dbeafe 100%);
+    --header-bg: linear-gradient(90deg, #1a73e8, #4285f4);
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(255, 255, 255, 0.5);
+    --text-color: #202124;
+    --accent-color: #1a73e8;
+    --table-header-bg: linear-gradient(90deg, #e8f0fe, #d2e3fc);
+    --table-row-bg: #fff;
+    --input-bg: rgba(241, 243, 244, 0.8);
+    --btn-bg: linear-gradient(90deg, #1a73e8, #4285f4);
+    --btn-hover-bg: linear-gradient(90deg, #1557b0, #357abd);
+    --edit-btn-bg: linear-gradient(90deg, #34c759, #5dd57e);
+    --delete-btn-bg: linear-gradient(90deg, #ea4335, #f57063);
+}
+
+[data-theme="dark"] {
+    --bg-color: linear-gradient(135deg, #1f2633 0%, #2e3748 100%);
+    --header-bg: linear-gradient(90deg, #2a3447, #3c4b66);
+    --card-bg: rgba(40, 48, 66, 0.9);
+    --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.1);
+    --text-color: #e8ecef;
+    --accent-color: #4dabf7;
+    --table-header-bg: linear-gradient(90deg, #3c4b66, #4a5b7a);
+    --table-row-bg: #2e3748;
+    --input-bg: rgba(60, 70, 90, 0.8);
+    --btn-bg: linear-gradient(90deg, #4dabf7, #74c0fc);
+    --btn-hover-bg: linear-gradient(90deg, #339af0, #4dabf7);
+    --edit-btn-bg: linear-gradient(90deg, #40c057, #69db7c);
+    --delete-btn-bg: linear-gradient(90deg, #fa5252, #ff8787);
+}
+
+[data-theme="neon"] {
+    --bg-color: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
+    --header-bg: linear-gradient(90deg, #ff00cc, #333399);
+    --card-bg: rgba(20, 15, 60, 0.85);
+    --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 0, 204, 0.3);
+    --text-color: #fff;
+    --accent-color: #00ffcc;
+    --table-header-bg: linear-gradient(90deg, #ff00cc, #00ffcc);
+    --table-row-bg: rgba(40, 35, 90, 0.9);
+    --input-bg: rgba(80, 70, 140, 0.7);
+    --btn-bg: linear-gradient(90deg, #ff00cc, #00ffcc);
+    --btn-hover-bg: linear-gradient(90deg, #cc00ff, #00ccff);
+    --edit-btn-bg: linear-gradient(90deg, #ffcc00, #ffff66);
+    --delete-btn-bg: linear-gradient(90deg, #ff3366, #ff6699);
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    overflow-x: hidden;
+    transition: background 0.5s ease;
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 25px;
+    background: var(--header-bg);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    margin-bottom: 30px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    transform: perspective(500px) translateZ(0);
+    transition: all 0.3s ease;
+}
+
+.header:hover {
+    transform: perspective(500px) translateZ(10px);
+}
+
+.header h1 {
+    font-size: 28px;
+    font-weight: 500;
+    color: #fff;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Controls (Theme + Icons) */
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+#themeSelect {
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#themeSelect:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.icon-group {
+    display: flex;
+    gap: 15px;
+}
+
+.icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    font-size: 22px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: scale(1.15) rotate(15deg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), 0 0 10px var(--accent-color);
+}
+
+/* Card Layout */
+.card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: var(--card-shadow);
+    backdrop-filter: blur(12px);
+    padding: 30px;
+    margin-bottom: 30px;
+    transition: all 0.4s ease;
+    transform: perspective(1000px) translateZ(0);
+}
+
+.card:hover {
+    transform: perspective(1000px) translateZ(15px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), 0 0 15px var(--accent-color);
+}
+
+.card h2 {
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--accent-color);
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+}
+
+th, td {
+    padding: 16px 20px;
+    text-align: left;
+    font-size: 15px;
+}
+
+th {
+    background: var(--table-header-bg);
+    color: var(--accent-color);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+td {
+    background: var(--table-row-bg);
+    border-radius: 10px;
+    color: var(--text-color);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+tr:hover td {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.02);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Tab Overlay */
+.tab-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Form (Tab) Styles */
+form {
+    position: relative;
+    background: var(--card-bg);
+    border-radius: 25px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3), 0 0 20px var(--accent-color);
+    backdrop-filter: blur(15px);
+    padding: 35px;
+    max-width: 500px;
+    width: 90%;
+    transform: translateY(50px);
+    opacity: 0;
+    animation: slideIn 0.4s ease forwards;
+}
+
+@keyframes slideIn {
+    to { transform: translateY(0); opacity: 1; }
+}
+
+form h3 {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 30px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+form label {
+    display: block;
+    font-size: 14px;
+    color: var(--text-color);
+    margin-bottom: 10px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+form input, form select {
+    width: 100%;
+    padding: 14px 18px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    color: var(--text-color);
+    background: var(--input-bg);
+    box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.4s ease;
+}
+
+form input:focus, form select:focus {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 12px var(--accent-color), inset 0 0 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Checkbox */
+form label input[type="checkbox"] {
+    width: auto;
+    margin-right: 12px;
+}
+
+/* Close Button */
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--delete-btn-bg);
+    color: #fff;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.close-btn:hover {
+    transform: rotate(180deg) scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), 0 0 10px var(--delete-btn-bg);
+}
+
+/* Buttons */
+form button, .action-btn {
+    padding: 14px 30px;
+    border: none;
+    border-radius: 30px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.4s ease;
+}
+
+form button {
+    background: var(--btn-bg);
+    color: #fff;
+    width: 100%;
+    margin-top: 30px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+form button:hover {
+    background: var(--btn-hover-bg);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), 0 0 15px var(--accent-color);
+}
+
+.action-btn {
+    padding: 10px 18px;
+    margin: 5px;
+}
+
+.edit-btn {
+    background: var(--edit-btn-bg);
+    color: #fff;
+}
+
+.edit-btn:hover {
+    background: var(--edit-btn-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.delete-btn {
+    background: var(--delete-btn-bg);
+    color: #fff;
+}
+
+.delete-btn:hover {
+    background: var(--delete-btn-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    .header {
+        padding: 10px 15px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .controls {
+        margin-top: 15px;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .icon-group {
+        flex-wrap: wrap;
+    }
+
+    .icon-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+
+    table, thead, tbody, th, td, tr {
+        display: block;
+    }
+
+    thead {
+        display: none;
+    }
+
+    tr {
+        margin-bottom: 15px;
+        border-radius: 10px;
+    }
+
+    td {
+        display: flex;
+        justify-content: space-between;
+        padding: 14px;
+        box-shadow: none;
+    }
+
+    td:before {
+        content: attr(data-label);
+        font-weight: 500;
+        color: var(--accent-color);
+        margin-right: 12px;
+    }
+
+    td:last-child {
+        justify-content: center;
+    }
+
+    form {
+        width: 95%;
+        padding: 25px;
+    }
+}
