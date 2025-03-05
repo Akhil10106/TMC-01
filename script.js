@@ -19,13 +19,17 @@ window.onload = function() {
         document.documentElement.setAttribute("data-theme", savedTheme);
         const themeSelect = document.getElementById("themeSelect");
         if (themeSelect) themeSelect.value = savedTheme;
-        else console.error("Theme select element not found!");
         
         console.log("Initial load - Teachers:", teachers);
         console.log("Initial load - Assignments:", assignments);
         
         loadTeachers();
         loadAssignments();
+        loadAnalytics();
+        updateFormOptions();
+        document.getElementById("saveTeacherBtn").addEventListener("click", addTeacher);
+        document.getElementById("saveSetupBtn").addEventListener("click", saveSetup);
+        document.getElementById("saveAssignmentBtn").addEventListener("click", () => saveAssignment(null));
     } catch (e) {
         console.error("Error initializing data:", e);
         teachers = [];
@@ -50,45 +54,56 @@ function changeTheme() {
     }
 }
 
-function closeTab() {
+function showNotification(message, type = "success") {
     try {
-        if (confirm("Are you sure you want to close without saving?")) {
-            const tabOverlay = document.getElementById("tabOverlay");
-            if (!tabOverlay) throw new Error("Tab overlay not found");
-            tabOverlay.style.display = "none";
-            tabOverlay.innerHTML = "";
-            console.log("Tab closed");
-        }
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+        console.log("Notification shown:", message);
     } catch (e) {
-        console.error("Error closing tab:", e);
+        console.error("Error showing notification:", e);
     }
 }
 
-function showTeacherForm() {
+function toggleSection(sectionId) {
     try {
-        const form = `
-            <form id="teacherForm">
-                <button class="close-btn" onclick="closeTab()">✕</button>
-                <h3>Add Teacher</h3>
-                <label>Add Teacher Name</label>
-                <input type="text" id="teacherName" placeholder="Name">
-                <label>Add Teacher Email</label>
-                <input type="email" id="teacherEmail" placeholder="Email">
-                <label>Add Teacher Phone</label>
-                <input type="text" id="teacherPhone" placeholder="Phone">
-                <button type="button" id="saveTeacherBtn">Save Teacher</button>
-            </form>`;
-        const tabOverlay = document.getElementById("tabOverlay");
-        if (!tabOverlay) throw new Error("Tab overlay not found");
-        tabOverlay.innerHTML = form;
-        tabOverlay.style.display = "flex";
-        console.log("Teacher form displayed");
-
-        const saveBtn = document.getElementById("saveTeacherBtn");
-        if (saveBtn) saveBtn.addEventListener("click", addTeacher);
-        else console.error("Save teacher button not found!");
+        const section = document.getElementById(sectionId);
+        if (!section) throw new Error(`Section ${sectionId} not found`);
+        const isVisible = section.style.display === "block";
+        document.querySelectorAll(".form-section, .data-section").forEach(s => s.style.display = "none");
+        section.style.display = isVisible ? "none" : "block";
+        console.log(`Toggled section ${sectionId} to ${isVisible ? "hidden" : "visible"}`);
     } catch (e) {
-        console.error("Error showing teacher form:", e);
+        console.error("Error toggling section:", e);
+    }
+}
+
+function updateFormOptions() {
+    try {
+        const teacherIdEl = document.getElementById("teacherId");
+        const subjectCodeEl = document.getElementById("subjectCode");
+        const shiftEl = document.getElementById("shift");
+        const packetCodeEl = document.getElementById("packetCode");
+        const totalExamsEl = document.getElementById("totalExams");
+        const filterTeacherEl = document.getElementById("filterTeacher");
+
+        if (!teacherIdEl || !subjectCodeEl || !shiftEl || !packetCodeEl || !totalExamsEl || !filterTeacherEl) throw new Error("Form options elements missing");
+
+        teacherIdEl.innerHTML = '<option value="">Select Teacher</option>' + teachers.map(t => `<option value="${t.id}">${t.name} (${t.id})</option>`).join("");
+        subjectCodeEl.innerHTML = '<option value="">Select Subject Code</option>' + subjectCodes.map(c => `<option value="${c}">${c}</option>`).join("");
+        shiftEl.innerHTML = '<option value="">Select Shift</option>' + shifts.map(s => `<option value="${s}">${s}</option>`).join("");
+        packetCodeEl.innerHTML = '<option value="">Select Packet Code</option>' + packetCodes.map(p => `<option value="${p}">${p}</option>`).join("");
+        totalExamsEl.innerHTML = '<option value="">Select Total Exams</option>' + totalExamsOptions.map(t => `<option value="${t}">${t}</option>`).join("");
+        filterTeacherEl.innerHTML = '<option value="">All Teachers</option>' + teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+
+        document.getElementById("subjectCodesInput").value = subjectCodes.join(", ");
+        document.getElementById("shiftsInput").value = shifts.join(", ");
+        document.getElementById("packetCodesInput").value = packetCodes.join(", ");
+        document.getElementById("totalExamsInput").value = totalExamsOptions.join(", ");
+    } catch (e) {
+        console.error("Error updating form options:", e);
     }
 }
 
@@ -117,8 +132,12 @@ function addTeacher() {
         localStorage.setItem("teachers", JSON.stringify(teachers));
         console.log("Teachers updated:", teachers);
         
-        closeTab();
+        nameEl.value = "";
+        emailEl.value = "";
+        phoneEl.value = "";
         loadTeachers();
+        updateFormOptions();
+        showNotification("Teacher added successfully!");
     } catch (e) {
         console.error("Error adding teacher:", e);
         alert("Failed to save teacher. Check console for details.");
@@ -130,27 +149,17 @@ function editTeacher(id) {
         const teacher = teachers.find(t => t.id === id);
         if (!teacher) throw new Error(`Teacher with ID ${id} not found`);
         
-        const form = `
-            <form id="editTeacherForm">
-                <button class="close-btn" onclick="closeTab()">✕</button>
-                <h3>Edit Teacher</h3>
-                <label>Edit Teacher Name</label>
-                <input type="text" id="editTeacherName" value="${teacher.name}">
-                <label>Edit Teacher Email</label>
-                <input type="email" id="editTeacherEmail" value="${teacher.email}">
-                <label>Edit Teacher Phone</label>
-                <input type="text" id="editTeacherPhone" value="${teacher.phone}">
-                <button type="button" id="saveEditTeacherBtn">Save Changes</button>
-            </form>`;
-        const tabOverlay = document.getElementById("tabOverlay");
-        if (!tabOverlay) throw new Error("Tab overlay not found");
-        tabOverlay.innerHTML = form;
-        tabOverlay.style.display = "flex";
-        console.log("Edit teacher form displayed for ID:", id);
-
-        const saveBtn = document.getElementById("saveEditTeacherBtn");
-        if (saveBtn) saveBtn.addEventListener("click", () => saveTeacherEdit(id));
-        else console.error("Save edit teacher button not found!");
+        toggleSection("teacherFormSection");
+        const nameEl = document.getElementById("teacherName");
+        const emailEl = document.getElementById("teacherEmail");
+        const phoneEl = document.getElementById("teacherPhone");
+        const saveBtn = document.getElementById("saveTeacherBtn");
+        
+        nameEl.value = teacher.name;
+        emailEl.value = teacher.email;
+        phoneEl.value = teacher.phone;
+        saveBtn.textContent = "Save Changes";
+        saveBtn.onclick = () => saveTeacherEdit(id);
     } catch (e) {
         console.error("Error editing teacher:", e);
     }
@@ -158,9 +167,9 @@ function editTeacher(id) {
 
 function saveTeacherEdit(id) {
     try {
-        const nameEl = document.getElementById("editTeacherName");
-        const emailEl = document.getElementById("editTeacherEmail");
-        const phoneEl = document.getElementById("editTeacherPhone");
+        const nameEl = document.getElementById("teacherName");
+        const emailEl = document.getElementById("teacherEmail");
+        const phoneEl = document.getElementById("teacherPhone");
         
         if (!nameEl || !emailEl || !phoneEl) throw new Error("Edit teacher form elements missing");
         
@@ -181,9 +190,16 @@ function saveTeacherEdit(id) {
         console.log("Teacher updated:", teachers[teacherIndex]);
         
         localStorage.setItem("teachers", JSON.stringify(teachers));
-        closeTab();
+        nameEl.value = "";
+        emailEl.value = "";
+        phoneEl.value = "";
+        document.getElementById("saveTeacherBtn").textContent = "Save Teacher";
+        document.getElementById("saveTeacherBtn").onclick = addTeacher;
+        toggleSection("teacherFormSection");
         loadTeachers();
         loadAssignments();
+        updateFormOptions();
+        showNotification("Teacher updated successfully!");
     } catch (e) {
         console.error("Error saving teacher edit:", e);
         alert("Failed to save changes. Check console for details.");
@@ -200,6 +216,8 @@ function deleteTeacher(id) {
             console.log("Teacher deleted, ID:", id);
             loadTeachers();
             loadAssignments();
+            updateFormOptions();
+            showNotification("Teacher deleted successfully!");
         }
     } catch (e) {
         console.error("Error deleting teacher:", e);
@@ -231,36 +249,6 @@ function loadTeachers() {
     }
 }
 
-function showSetupForm() {
-    try {
-        const form = `
-            <form id="setupForm">
-                <button class="close-btn" onclick="closeTab()">✕</button>
-                <h3>Setup Options</h3>
-                <label>Select Subject Code</label>
-                <input type="text" id="subjectCodesInput" placeholder="e.g., MATH101, ENG102" value="${subjectCodes.join(", ")}">
-                <label>Select Shift</label>
-                <input type="text" id="shiftsInput" placeholder="e.g., Morning, Afternoon" value="${shifts.join(", ")}">
-                <label>Select Packet Code</label>
-                <input type="text" id="packetCodesInput" placeholder="e.g., P001, P002" value="${packetCodes.join(", ")}">
-                <label>Select Total Exams</label>
-                <input type="text" id="totalExamsInput" placeholder="e.g., 25, 50, 100" value="${totalExamsOptions.join(", ")}">
-                <button type="button" id="saveSetupBtn">Save Options</button>
-            </form>`;
-        const tabOverlay = document.getElementById("tabOverlay");
-        if (!tabOverlay) throw new Error("Tab overlay not found");
-        tabOverlay.innerHTML = form;
-        tabOverlay.style.display = "flex";
-        console.log("Setup form displayed");
-
-        const saveBtn = document.getElementById("saveSetupBtn");
-        if (saveBtn) saveBtn.addEventListener("click", saveSetup);
-        else console.error("Save setup button not found!");
-    } catch (e) {
-        console.error("Error showing setup form:", e);
-    }
-}
-
 function saveSetup() {
     try {
         const subjectCodesEl = document.getElementById("subjectCodesInput");
@@ -281,84 +269,12 @@ function saveSetup() {
         localStorage.setItem("totalExamsOptions", JSON.stringify(totalExamsOptions));
         console.log("Setup saved:", { subjectCodes, shifts, packetCodes, totalExamsOptions });
         
-        closeTab();
+        toggleSection("setupFormSection");
+        updateFormOptions();
+        showNotification("Setup options saved successfully!");
     } catch (e) {
         console.error("Error saving setup:", e);
         alert("Failed to save setup options. Check console for details.");
-    }
-}
-
-function showAssignmentForm(assignmentId = null) {
-    try {
-        let teacherOptions = '<option value="">Select Teacher</option>';
-        teachers.forEach(teacher => {
-            teacherOptions += `<option value="${teacher.id}">${teacher.name} (${teacher.id})</option>`;
-        });
-
-        let subjectCodeOptions = '<option value="">Select Subject Code</option>';
-        subjectCodes.forEach(code => {
-            subjectCodeOptions += `<option value="${code}">${code}</option>`;
-        });
-
-        let shiftOptions = '<option value="">Select Shift</option>';
-        shifts.forEach(shift => {
-            shiftOptions += `<option value="${shift}">${shift}</option>`;
-        });
-
-        let packetCodeOptions = '<option value="">Select Packet Code</option>';
-        packetCodes.forEach(code => {
-            packetCodeOptions += `<option value="${code}">${code}</option>`;
-        });
-
-        let totalExamsOptionsHtml = '<option value="">Select Total Exams</option>';
-        totalExamsOptions.forEach(num => {
-            totalExamsOptionsHtml += `<option value="${num}">${num}</option>`;
-        });
-
-        const assignment = assignmentId ? assignments.find(a => a.id === assignmentId) : null;
-        const form = `
-            <form id="assignForm">
-                <button class="close-btn" onclick="closeTab()">✕</button>
-                <h3>${assignment ? "Edit Task" : "Assign Task"}</h3>
-                <label>Select Teacher</label>
-                <select id="teacherId">${teacherOptions}</select>
-                <label>Select Subject Code</label>
-                <select id="subjectCode">${subjectCodeOptions}</select>
-                <label>Select Shift</label>
-                <select id="shift">${shiftOptions}</select>
-                <label>Select Packet Code</label>
-                <select id="packetCode">${packetCodeOptions}</select>
-                <label>Select Total Exams</label>
-                <select id="totalExams">${totalExamsOptionsHtml}</select>
-                <label>Exam Type</label>
-                <input type="text" id="examType" placeholder="Exam Type" value="${assignment ? assignment.examType : ""}">
-                <label><input type="checkbox" id="isExternal" ${assignment && assignment.isExternal ? "checked" : ""}> External</label>
-                <button type="button" id="saveAssignmentBtn">Save ${assignment ? "Changes" : "Assignment"}</button>
-            </form>`;
-        const tabOverlay = document.getElementById("tabOverlay");
-        if (!tabOverlay) throw new Error("Tab overlay not found");
-        tabOverlay.innerHTML = form;
-        tabOverlay.style.display = "flex";
-        console.log("Assignment form displayed, ID:", assignmentId);
-
-        if (assignment) {
-            const teacherIdEl = document.getElementById("teacherId");
-            const subjectCodeEl = document.getElementById("subjectCode");
-            const shiftEl = document.getElementById("shift");
-            const packetCodeEl = document.getElementById("packetCode");
-            const totalExamsEl = document.getElementById("totalExams");
-            if (teacherIdEl) teacherIdEl.value = assignment.teacherId || "";
-            if (subjectCodeEl) subjectCodeEl.value = assignment.subjectCode || "";
-            if (shiftEl) shiftEl.value = assignment.shift || "";
-            if (packetCodeEl) packetCodeEl.value = assignment.packetCode || "";
-            if (totalExamsEl) totalExamsEl.value = assignment.totalExams || "";
-        }
-
-        const saveBtn = document.getElementById("saveAssignmentBtn");
-        if (saveBtn) saveBtn.addEventListener("click", () => saveAssignment(assignmentId));
-        else console.error("Save assignment button not found!");
-    } catch (e) {
-        console.error("Error showing assignment form:", e);
     }
 }
 
@@ -373,8 +289,9 @@ function saveAssignment(assignmentId) {
         const totalExamsEl = document.getElementById("totalExams");
         const examTypeEl = document.getElementById("examType");
         const isExternalEl = document.getElementById("isExternal");
+        const statusEl = document.getElementById("status");
 
-        if (!teacherIdEl || !subjectCodeEl || !shiftEl || !packetCodeEl || !totalExamsEl || !examTypeEl || !isExternalEl) {
+        if (!teacherIdEl || !subjectCodeEl || !shiftEl || !packetCodeEl || !totalExamsEl || !examTypeEl || !isExternalEl || !statusEl) {
             throw new Error("Assignment form elements missing");
         }
 
@@ -385,10 +302,11 @@ function saveAssignment(assignmentId) {
         const totalExams = totalExamsEl.value;
         const examType = examTypeEl.value.trim();
         const isExternal = isExternalEl.checked;
+        const status = statusEl.value;
 
-        console.log("Form values:", { teacherId, subjectCode, shift, packetCode, totalExams, examType, isExternal });
+        console.log("Form values:", { teacherId, subjectCode, shift, packetCode, totalExams, examType, isExternal, status });
 
-        if (!teacherId || !subjectCode || !shift || !packetCode || !totalExams || !examType) {
+        if (!teacherId || !subjectCode || !shift || !packetCode || !totalExams || !examType || !status) {
             console.error("Validation failed - Missing required fields");
             alert("All fields are required!");
             return;
@@ -403,8 +321,10 @@ function saveAssignment(assignmentId) {
             totalExams: parseInt(totalExams) || 0,
             examType,
             isExternal,
+            status: status || "Assigned",
             date: new Date().toISOString().split("T")[0],
-            year: currentYear
+            year: currentYear,
+            examReturned: assignmentId ? (assignments.find(a => a.id === assignmentId)?.examReturned || false) : false
         };
 
         console.log("Assignment to save:", assignment);
@@ -425,18 +345,108 @@ function saveAssignment(assignmentId) {
         localStorage.setItem("assignments", JSON.stringify(assignments));
         console.log("localStorage updated:", JSON.parse(localStorage.getItem("assignments")));
         
-        closeTab();
+        teacherIdEl.value = "";
+        subjectCodeEl.value = "";
+        shiftEl.value = "";
+        packetCodeEl.value = "";
+        totalExamsEl.value = "";
+        examTypeEl.value = "";
+        isExternalEl.checked = false;
+        statusEl.value = "Assigned";
+        toggleSection("assignmentFormSection");
         loadAssignments();
+        loadAnalytics();
+        showNotification("Assignment saved successfully!");
     } catch (e) {
         console.error("Error saving assignment:", e);
         alert("Failed to save assignment. Check console for details.");
     }
 }
 
+function updateExamReturnStatus(assignmentId) {
+    try {
+        const index = assignments.findIndex(a => a.id === assignmentId);
+        if (index === -1) throw new Error(`Assignment ID ${assignmentId} not found`);
+        
+        assignments[index].examReturned = !assignments[index].examReturned;
+        localStorage.setItem("assignments", JSON.stringify(assignments));
+        console.log(`Exam return status updated for ID ${assignmentId}:`, assignments[index].examReturned);
+        
+        loadAssignments();
+        loadAnalytics();
+        showNotification(`Exams marked as ${assignments[index].examReturned ? "returned" : "unreturned"}!`);
+    } catch (e) {
+        console.error("Error updating exam return status:", e);
+        alert("Failed to update exam return status. Check console for details.");
+    }
+}
+
+function exportToCSV(type) {
+    try {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        let headers, rows;
+
+        if (type === "teachers") {
+            headers = "ID,Name,Email,Phone\n";
+            rows = teachers.map(t => `${t.id},${t.name},${t.email},${t.phone}`).join("\n");
+        } else if (type === "assignments") {
+            headers = "ID,Teacher,Subject,Shift,Packet,Exams,Type,External,Status,Returned,Date,Year\n";
+            rows = assignments.map(a => `${a.id},${teachers.find(t => t.id === a.teacherId)?.name || "Unknown"},${a.subjectCode},${a.shift},${a.packetCode},${a.totalExams},${a.examType},${a.isExternal},${a.status},${a.examReturned},${a.date},${a.year}`).join("\n");
+        } else if (type === "records") {
+            headers = "Year,Teacher,Subject,Total Exams\n";
+            const records = assignments.reduce((acc, a) => {
+                const key = `${a.year}-${a.teacherId}-${a.subjectCode}`;
+                acc[key] = acc[key] || { year: a.year, teacher: teachers.find(t => t.id === a.teacherId)?.name || "Unknown", subject: a.subjectCode, exams: 0 };
+                acc[key].exams += a.totalExams;
+                return acc;
+            }, {});
+            rows = Object.values(records).map(r => `${r.year},${r.teacher},${r.subject},${r.exams}`).join("\n");
+        } else {
+            throw new Error("Invalid export type");
+        }
+
+        csvContent += headers + rows;
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${type}_${new Date().toISOString().split("T")[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log(`${type} exported to CSV`);
+        showNotification(`${type} exported successfully!`);
+    } catch (e) {
+        console.error("Error exporting to CSV:", e);
+        alert("Failed to export data. Check console for details.");
+    }
+}
+
 function editAssignment(id) {
     try {
-        console.log("Editing assignment with ID:", id);
-        showAssignmentForm(id);
+        const assignment = assignments.find(a => a.id === id);
+        if (!assignment) throw new Error(`Assignment with ID ${id} not found`);
+        
+        toggleSection("assignmentFormSection");
+        const teacherIdEl = document.getElementById("teacherId");
+        const subjectCodeEl = document.getElementById("subjectCode");
+        const shiftEl = document.getElementById("shift");
+        const packetCodeEl = document.getElementById("packetCode");
+        const totalExamsEl = document.getElementById("totalExams");
+        const examTypeEl = document.getElementById("examType");
+        const isExternalEl = document.getElementById("isExternal");
+        const statusEl = document.getElementById("status");
+        const saveBtn = document.getElementById("saveAssignmentBtn");
+
+        teacherIdEl.value = assignment.teacherId || "";
+        subjectCodeEl.value = assignment.subjectCode || "";
+        shiftEl.value = assignment.shift || "";
+        packetCodeEl.value = assignment.packetCode || "";
+        totalExamsEl.value = assignment.totalExams || "";
+        examTypeEl.value = assignment.examType || "";
+        isExternalEl.checked = assignment.isExternal || false;
+        statusEl.value = assignment.status || "Assigned";
+        saveBtn.textContent = "Save Changes";
+        saveBtn.onclick = () => saveAssignment(id);
     } catch (e) {
         console.error("Error editing assignment:", e);
     }
@@ -449,6 +459,8 @@ function deleteAssignment(id) {
             localStorage.setItem("assignments", JSON.stringify(assignments));
             console.log("Assignment deleted, ID:", id);
             loadAssignments();
+            loadAnalytics();
+            showNotification("Assignment deleted successfully!");
         }
     } catch (e) {
         console.error("Error deleting assignment:", e);
@@ -459,15 +471,37 @@ function deleteAssignment(id) {
 function loadAssignments() {
     try {
         const tableBody = document.querySelector("#assignmentTable tbody");
-        if (!tableBody) throw new Error("Assignment table body not found");
-        
+        const searchInput = document.getElementById("searchInput");
+        const filterTeacher = document.getElementById("filterTeacher");
+        const filterStatus = document.getElementById("filterStatus");
+        if (!tableBody || !searchInput || !filterTeacher || !filterStatus) throw new Error("Assignment table or filter elements not found");
+
+        let filteredAssignments = [...assignments];
+        const searchTerm = searchInput.value.toLowerCase();
+        const teacherFilter = filterTeacher.value;
+        const statusFilter = filterStatus.value;
+
+        if (searchTerm) {
+            filteredAssignments = filteredAssignments.filter(a => 
+                teachers.find(t => t.id === a.teacherId)?.name.toLowerCase().includes(searchTerm) ||
+                a.subjectCode.toLowerCase().includes(searchTerm) ||
+                a.examType.toLowerCase().includes(searchTerm)
+            );
+        }
+        if (teacherFilter) {
+            filteredAssignments = filteredAssignments.filter(a => a.teacherId === teacherFilter);
+        }
+        if (statusFilter) {
+            filteredAssignments = filteredAssignments.filter(a => a.status === statusFilter);
+        }
+
         tableBody.innerHTML = "";
-        console.log("Rendering assignments:", assignments);
-        
-        if (assignments.length === 0) {
-            tableBody.innerHTML = "<tr><td colspan='8'>No assignments found.</td></tr>";
+        console.log("Rendering filtered assignments:", filteredAssignments);
+
+        if (filteredAssignments.length === 0) {
+            tableBody.innerHTML = "<tr><td colspan='10'>No assignments found.</td></tr>";
         } else {
-            assignments.forEach(assignment => {
+            filteredAssignments.forEach(assignment => {
                 const teacher = teachers.find(t => t.id === assignment.teacherId)?.name || "Unknown";
                 const row = `<tr>
                     <td data-label="Teacher">${teacher}</td>
@@ -477,9 +511,12 @@ function loadAssignments() {
                     <td data-label="Exams">${assignment.totalExams}</td>
                     <td data-label="Type">${assignment.examType}</td>
                     <td data-label="External">${assignment.isExternal ? "Yes" : "No"}</td>
+                    <td data-label="Status">${assignment.status}</td>
+                    <td data-label="Returned">${assignment.examReturned ? "Yes" : "No"}</td>
                     <td data-label="Actions">
                         <button class="action-btn edit-btn" onclick="editAssignment('${assignment.id}')">Edit</button>
                         <button class="action-btn delete-btn" onclick="deleteAssignment('${assignment.id}')">Delete</button>
+                        <button class="action-btn" onclick="updateExamReturnStatus('${assignment.id}')">${assignment.examReturned ? "Mark Unreturned" : "Mark Returned"}</button>
                     </td>
                 </tr>`;
                 tableBody.innerHTML += row;
@@ -490,11 +527,39 @@ function loadAssignments() {
     }
 }
 
+function loadAnalytics() {
+    try {
+        const tableBody = document.querySelector("#analyticsTable tbody");
+        if (!tableBody) throw new Error("Analytics table body not found");
+
+        tableBody.innerHTML = "";
+        const teacherStats = teachers.map(teacher => {
+            const teacherAssignments = assignments.filter(a => a.teacherId === teacher.id);
+            const totalExams = teacherAssignments.reduce((sum, a) => sum + a.totalExams, 0);
+            const completedExams = teacherAssignments.filter(a => a.status === "Completed").reduce((sum, a) => sum + a.totalExams, 0);
+            return { name: teacher.name, totalExams, completedExams };
+        });
+
+        teacherStats.forEach(stat => {
+            const row = `<tr>
+                <td data-label="Teacher">${stat.name}</td>
+                <td data-label="Total Exams">${stat.totalExams}</td>
+                <td data-label="Completed Exams">${stat.completedExams}</td>
+                <td data-label="Workload">${((stat.totalExams / (assignments.reduce((sum, a) => sum + a.totalExams, 0) || 1)) * 100).toFixed(2)}%</td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+
+        console.log("Analytics loaded");
+    } catch (e) {
+        console.error("Error loading analytics:", e);
+    }
+}
+
 function showRecords() {
     try {
-        const recordsDiv = document.getElementById("records");
         const tableBody = document.querySelector("#recordsTable tbody");
-        if (!recordsDiv || !tableBody) throw new Error("Records elements not found");
+        if (!tableBody) throw new Error("Records table body not found");
         
         tableBody.innerHTML = "";
         
@@ -519,7 +584,6 @@ function showRecords() {
             </tr>`;
         });
 
-        recordsDiv.style.display = recordsDiv.style.display === "block" ? "none" : "block";
         console.log("Records displayed");
     } catch (e) {
         console.error("Error showing records:", e);
