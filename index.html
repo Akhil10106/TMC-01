@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TMC Website</title>
+    <title>TMC Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="dashboard" class="container">
+    <div class="dashboard">
         <header class="header">
             <h1>TMC Dashboard</h1>
             <div class="controls">
@@ -16,42 +16,117 @@
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
                 </select>
-                <div class="icon-group">
-                    <button class="icon-btn" onclick="showTeacherForm()" title="Add Teacher">👩‍🏫</button>
-                    <button class="icon-btn" onclick="showSetupForm()" title="Setup Options">⚙️</button>
-                    <button class="icon-btn" onclick="showAssignmentForm()" title="Assign Task">📝</button>
-                    <button class="icon-btn" onclick="showRecords()" title="View Records">📊</button>
-                </div>
+                <button class="control-btn" onclick="toggleSection('teacherFormSection')" title="Add Teacher">👩‍🏫 Add Teacher</button>
+                <button class="control-btn" onclick="toggleSection('setupFormSection')" title="Setup Options">⚙️ Setup</button>
+                <button class="control-btn" onclick="toggleSection('assignmentFormSection')" title="Assign Task">📝 Assign Task</button>
+                <button class="control-btn" onclick="toggleSection('recordsSection')" title="View Records">📊 Records</button>
+                <button class="control-btn" onclick="toggleSection('analyticsSection')" title="View Analytics">📈 Analytics</button>
+                <button class="control-btn" onclick="exportToCSV('teachers')" title="Export Teachers">⬇️ Teachers</button>
+                <button class="control-btn" onclick="exportToCSV('assignments')" title="Export Assignments">⬇️ Assignments</button>
+                <button class="control-btn" onclick="exportToCSV('records')" title="Export Records">⬇️ Records</button>
             </div>
         </header>
 
-        <div class="card-grid">
-            <div class="card">
+        <main class="main-content">
+            <section id="teacherFormSection" class="form-section" style="display: none;">
+                <h2>Add Teacher</h2>
+                <form id="teacherForm" class="form-grid">
+                    <label for="teacherName">Name</label>
+                    <input type="text" id="teacherName" placeholder="Name">
+                    <label for="teacherEmail">Email</label>
+                    <input type="email" id="teacherEmail" placeholder="Email">
+                    <label for="teacherPhone">Phone</label>
+                    <input type="text" id="teacherPhone" placeholder="Phone">
+                    <button type="button" id="saveTeacherBtn" class="form-btn">Save Teacher</button>
+                </form>
+            </section>
+
+            <section id="setupFormSection" class="form-section" style="display: none;">
+                <h2>Setup Options</h2>
+                <form id="setupForm" class="form-grid">
+                    <label for="subjectCodesInput">Subject Codes</label>
+                    <input type="text" id="subjectCodesInput" placeholder="e.g., MATH101, ENG102">
+                    <label for="shiftsInput">Shifts</label>
+                    <input type="text" id="shiftsInput" placeholder="e.g., Morning, Afternoon">
+                    <label for="packetCodesInput">Packet Codes</label>
+                    <input type="text" id="packetCodesInput" placeholder="e.g., P001, P002">
+                    <label for="totalExamsInput">Total Exams</label>
+                    <input type="text" id="totalExamsInput" placeholder="e.g., 25, 50, 100">
+                    <button type="button" id="saveSetupBtn" class="form-btn">Save Options</button>
+                </form>
+            </section>
+
+            <section id="assignmentFormSection" class="form-section" style="display: none;">
+                <h2>Assign Task</h2>
+                <form id="assignForm" class="form-grid">
+                    <label for="teacherId">Teacher</label>
+                    <select id="teacherId"></select>
+                    <label for="subjectCode">Subject Code</label>
+                    <select id="subjectCode"></select>
+                    <label for="shift">Shift</label>
+                    <select id="shift"></select>
+                    <label for="packetCode">Packet Code</label>
+                    <select id="packetCode"></select>
+                    <label for="totalExams">Total Exams</label>
+                    <select id="totalExams"></select>
+                    <label for="examType">Exam Type</label>
+                    <input type="text" id="examType" placeholder="Exam Type">
+                    <label for="isExternal">External</label>
+                    <input type="checkbox" id="isExternal">
+                    <label for="status">Status</label>
+                    <select id="status">
+                        <option value="Assigned">Assigned</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                    <button type="button" id="saveAssignmentBtn" class="form-btn">Save Assignment</button>
+                </form>
+            </section>
+
+            <section class="data-section">
                 <h2>Teachers</h2>
                 <table id="teacherTable">
                     <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
                     <tbody></tbody>
                 </table>
-            </div>
+            </section>
 
-            <div class="card">
+            <section class="data-section">
                 <h2>Assignments</h2>
+                <div class="filter-bar">
+                    <input type="text" id="searchInput" placeholder="Search assignments..." onkeyup="loadAssignments()">
+                    <select id="filterTeacher" onchange="loadAssignments()">
+                        <option value="">All Teachers</option>
+                    </select>
+                    <select id="filterStatus" onchange="loadAssignments()">
+                        <option value="">All Statuses</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
                 <table id="assignmentTable">
-                    <thead><tr><th>Teacher</th><th>Subject</th><th>Shift</th><th>Packet</th><th>Exams</th><th>Type</th><th>External</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Teacher</th><th>Subject</th><th>Shift</th><th>Packet</th><th>Exams</th><th>Type</th><th>External</th><th>Status</th><th>Returned</th><th>Actions</th></tr></thead>
                     <tbody></tbody>
                 </table>
-            </div>
+            </section>
 
-            <div id="records" class="card" style="display:none;">
+            <section id="recordsSection" class="data-section" style="display: none;">
                 <h2>Annual Records</h2>
                 <table id="recordsTable">
                     <thead><tr><th>Year</th><th>Teacher</th><th>Subject</th><th>Exams</th></tr></thead>
                     <tbody></tbody>
                 </table>
-            </div>
-        </div>
+            </section>
 
-        <div id="tabOverlay" class="tab-overlay" style="display:none;"></div>
+            <section id="analyticsSection" class="data-section" style="display: none;">
+                <h2>Teacher Workload Analytics</h2>
+                <table id="analyticsTable">
+                    <thead><tr><th>Teacher</th><th>Total Exams</th><th>Completed Exams</th><th>Workload %</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+        </main>
     </div>
 
     <script src="script.js"></script>
