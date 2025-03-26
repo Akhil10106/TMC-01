@@ -6,81 +6,87 @@
     <title>TMC Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN -->
 </head>
 <body>
     <div class="dashboard">
-        <header class="header">
-            <h1>TMC Dashboard</h1>
-            <div class="controls">
-                <select id="themeSelect" onchange="changeTheme()">
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                </select>
-                <button class="control-btn" onclick="toggleSection('teacherFormSection')" title="Add Teacher">👩‍🏫 Add Teacher</button>
-                <button class="control-btn" onclick="toggleSection('setupFormSection')" title="Setup Options">⚙️ Setup</button>
-                <button class="control-btn" onclick="toggleSection('assignmentFormSection')" title="Assign Task">📝 Assign Task</button>
-                <button class="control-btn" onclick="toggleSection('recordsSection')" title="View Records">📊 Records</button>
-                <button class="control-btn" onclick="toggleSection('analyticsSection')" title="View Analytics">📈 Analytics</button>
-                <button class="control-btn" onclick="exportToCSV('teachers')" title="Export Teachers">⬇️ Teachers</button>
-                <button class="control-btn" onclick="exportToCSV('assignments')" title="Export Assignments">⬇️ Assignments</button>
-                <button class="control-btn" onclick="exportToCSV('records')" title="Export Records">⬇️ Records</button>
-            </div>
-        </header>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2>TMC</h2>
+            <nav>
+                <button onclick="toggleSection('teacherFormSection')">👩‍🏫 Add Teacher</button>
+                <button onclick="toggleSection('setupFormSection')">⚙️ Setup</button>
+                <button onclick="toggleSection('assignmentFormSection')">📝 Assign Task</button>
+                <button onclick="showAssignmentsOnly()">📋 Assignments</button>
+                <button onclick="toggleSection('examSchedulerSection')">🗓️ Exams</button>
+                <button onclick="showAnalyticsOnly()">📈 Analytics</button>
+            </nav>
+            <button class="settings-btn" onclick="toggleSettings()">⚙️ Settings</button>
+        </aside>
 
+        <!-- Main Content -->
         <main class="main-content">
+            <header class="header">
+                <h1 onclick="goToMainPage()">TMC Dashboard</h1> <!-- Added onclick event -->
+            </header>
+
             <section id="teacherFormSection" class="form-section" style="display: none;">
                 <h2>Add Teacher</h2>
                 <form id="teacherForm" class="form-grid">
-                    <label for="teacherName">Name</label>
-                    <input type="text" id="teacherName" placeholder="Name">
-                    <label for="teacherEmail">Email</label>
-                    <input type="email" id="teacherEmail" placeholder="Email">
-                    <label for="teacherPhone">Phone</label>
+                    <input type="text" id="teacherName" placeholder="Name" required>
+                    <input type="email" id="teacherEmail" placeholder="Email" required>
                     <input type="text" id="teacherPhone" placeholder="Phone">
-                    <button type="button" id="saveTeacherBtn" class="form-btn">Save Teacher</button>
+                    <button type="button" id="saveTeacherBtn" class="form-btn">Done</button>
                 </form>
             </section>
 
             <section id="setupFormSection" class="form-section" style="display: none;">
                 <h2>Setup Options</h2>
                 <form id="setupForm" class="form-grid">
-                    <label for="subjectCodesInput">Subject Codes</label>
-                    <input type="text" id="subjectCodesInput" placeholder="e.g., MATH101, ENG102">
-                    <label for="shiftsInput">Shifts</label>
-                    <input type="text" id="shiftsInput" placeholder="e.g., Morning, Afternoon">
-                    <label for="packetCodesInput">Packet Codes</label>
-                    <input type="text" id="packetCodesInput" placeholder="e.g., P001, P002">
-                    <label for="totalExamsInput">Total Exams</label>
-                    <input type="text" id="totalExamsInput" placeholder="e.g., 25, 50, 100">
-                    <button type="button" id="saveSetupBtn" class="form-btn">Save Options</button>
+                    <input type="text" id="subjectCodesInput" placeholder="Subject Codes (e.g., MATH101, ENG102)">
+                    <input type="text" id="shiftsInput" placeholder="Shifts (e.g., Morning, Afternoon)">
+                    <input type="text" id="packetCodesInput" placeholder="Packet Codes (e.g., P001, P002)">
+                    <input type="text" id="totalExamsInput" placeholder="Total Exams (e.g., 25, 50)">
+                    <button type="button" id="saveSetupBtn" class="form-btn">Save</button>
                 </form>
             </section>
 
             <section id="assignmentFormSection" class="form-section" style="display: none;">
                 <h2>Assign Task</h2>
                 <form id="assignForm" class="form-grid">
-                    <label for="teacherId">Teacher</label>
                     <select id="teacherId"></select>
-                    <label for="subjectCode">Subject Code</label>
                     <select id="subjectCode"></select>
-                    <label for="shift">Shift</label>
                     <select id="shift"></select>
-                    <label for="packetCode">Packet Code</label>
                     <select id="packetCode"></select>
-                    <label for="totalExams">Total Exams</label>
-                    <select id="totalExams"></select>
-                    <label for="examType">Exam Type</label>
-                    <input type="text" id="examType" placeholder="Exam Type">
-                    <label for="isExternal">External</label>
-                    <input type="checkbox" id="isExternal">
-                    <label for="status">Status</label>
+                    <input type="number" id="totalExams" placeholder="Total Exams" min="1" step="1">
+                    <label><input type="checkbox" id="isExternal"> External</label>
                     <select id="status">
                         <option value="Assigned">Assigned</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
                     </select>
-                    <button type="button" id="saveAssignmentBtn" class="form-btn">Save Assignment</button>
+                    <button type="button" id="saveAssignmentBtn" class="form-btn">Done</button>
                 </form>
+            </section>
+
+            <section id="examSchedulerSection" class="form-section" style="display: none;">
+                <h2>Schedule Exam</h2>
+                <form class="form-grid">
+                    <input type="text" id="examTitle" placeholder="Exam Title">
+                    <select id="examSubject"></select>
+                    <select id="examShift"></select>
+                    <input type="date" id="examDate">
+                    <select id="checkingTeacher"></select>
+                    <input type="date" id="checkingDeadline">
+                    <select id="examStatus">
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                    <button type="button" id="saveExamBtn" class="form-btn">Save</button>
+                    <button type="button" id="viewExamCalendarBtn" class="form-btn" onclick="showExamCalendar()">Calendar</button>
+                </form>
+                <div id="examCalendar" style="display: none;"></div>
             </section>
 
             <section class="data-section">
@@ -91,44 +97,52 @@
                 </table>
             </section>
 
-            <section class="data-section">
+            <section class="data-section" id="assignmentsSection">
                 <h2>Assignments</h2>
                 <div class="filter-bar">
-                    <input type="text" id="searchInput" placeholder="Search assignments..." onkeyup="loadAssignments()">
-                    <select id="filterTeacher" onchange="loadAssignments()">
-                        <option value="">All Teachers</option>
-                    </select>
+                    <input type="text" id="searchInput" placeholder="Search..." onkeyup="loadAssignments()">
+                    <select id="filterTeacher" onchange="loadAssignments()"></select>
                     <select id="filterStatus" onchange="loadAssignments()">
-                        <option value="">All Statuses</option>
+                        <option value="">All Status</option>
                         <option value="Assigned">Assigned</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
                     </select>
                 </div>
                 <table id="assignmentTable">
-                    <thead><tr><th>Teacher</th><th>Subject</th><th>Shift</th><th>Packet</th><th>Exams</th><th>Type</th><th>External</th><th>Status</th><th>Returned</th><th>Actions</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </section>
-
-            <section id="recordsSection" class="data-section" style="display: none;">
-                <h2>Annual Records</h2>
-                <table id="recordsTable">
-                    <thead><tr><th>Year</th><th>Teacher</th><th>Subject</th><th>Exams</th></tr></thead>
+                    <thead><tr><th>Teacher</th><th>Subject</th><th>Shift</th><th>Packet Code</th><th>Exams</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
 
             <section id="analyticsSection" class="data-section" style="display: none;">
-                <h2>Teacher Workload Analytics</h2>
-                <table id="analyticsTable">
-                    <thead><tr><th>Teacher</th><th>Total Exams</th><th>Completed Exams</th><th>Workload %</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <h2>Analytics</h2>
+                <div class="charts">
+                    <canvas id="totalExamsChart" width="400" height="200"></canvas>
+                    <canvas id="completedExamsChart" width="400" height="200"></canvas>
+                    <canvas id="workloadChart" width="400" height="200"></canvas>
+                </div>
             </section>
+
+            <!-- Settings Modal -->
+            <div id="settingsModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <span class="close-btn" onclick="toggleSettings()">×</span>
+                    <h2>Settings</h2>
+                    <div class="settings-options">
+                        <label>Theme:</label>
+                        <select id="themeSelect" onchange="changeTheme()">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                        <button onclick="exportToCSV('teachers')">⬇️ Export Teachers</button>
+                        <button onclick="exportToCSV('assignments')">⬇️ Export Assignments</button>
+                        <button onclick="exportToCSV('records')">⬇️ Export Records</button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
