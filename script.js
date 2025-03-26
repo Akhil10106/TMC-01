@@ -1,39 +1,44 @@
 let teachers = [];
 let assignments = [];
+let exams = [];
 let currentYear = new Date().getFullYear().toString();
 let subjectCodes = [];
 let shifts = [];
 let packetCodes = [];
 let totalExamsOptions = [];
+let totalExamsChart, completedExamsChart, workloadChart;
 
 window.onload = function() {
     try {
         teachers = JSON.parse(localStorage.getItem("teachers")) || [];
         assignments = JSON.parse(localStorage.getItem("assignments")) || [];
+        exams = JSON.parse(localStorage.getItem("exams")) || [];
         subjectCodes = JSON.parse(localStorage.getItem("subjectCodes")) || [];
         shifts = JSON.parse(localStorage.getItem("shifts")) || [];
         packetCodes = JSON.parse(localStorage.getItem("packetCodes")) || [];
         totalExamsOptions = JSON.parse(localStorage.getItem("totalExamsOptions")) || [];
-        
+
         const savedTheme = localStorage.getItem("theme") || "light";
         document.documentElement.setAttribute("data-theme", savedTheme);
         const themeSelect = document.getElementById("themeSelect");
         if (themeSelect) themeSelect.value = savedTheme;
-        
-        console.log("Initial load - Teachers:", teachers);
-        console.log("Initial load - Assignments:", assignments);
-        
+
+        console.log("Initial data loaded:", { teachers, assignments, exams });
+
         loadTeachers();
         loadAssignments();
-        loadAnalytics();
         updateFormOptions();
+        loadExamsIntoForm();
+
         document.getElementById("saveTeacherBtn").addEventListener("click", addTeacher);
         document.getElementById("saveSetupBtn").addEventListener("click", saveSetup);
         document.getElementById("saveAssignmentBtn").addEventListener("click", () => saveAssignment(null));
+        document.getElementById("saveExamBtn").addEventListener("click", saveExam);
     } catch (e) {
         console.error("Error initializing data:", e);
         teachers = [];
         assignments = [];
+        exams = [];
         subjectCodes = [];
         shifts = [];
         packetCodes = [];
@@ -60,7 +65,15 @@ function showNotification(message, type = "success") {
         notification.className = `notification ${type}`;
         notification.textContent = message;
         document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
+
+        // Remove the notification with slide-up animation after 3 seconds
+        setTimeout(() => {
+            notification.style.animation = "slideUp 0.5s ease forwards";
+            notification.addEventListener("animationend", () => {
+                notification.remove();
+            });
+        }, 3000);
+
         console.log("Notification shown:", message);
     } catch (e) {
         console.error("Error showing notification:", e);
@@ -68,16 +81,11 @@ function showNotification(message, type = "success") {
 }
 
 function toggleSection(sectionId) {
-    try {
-        const section = document.getElementById(sectionId);
-        if (!section) throw new Error(`Section ${sectionId} not found`);
-        const isVisible = section.style.display === "block";
-        document.querySelectorAll(".form-section, .data-section").forEach(s => s.style.display = "none");
-        section.style.display = isVisible ? "none" : "block";
-        console.log(`Toggled section ${sectionId} to ${isVisible ? "hidden" : "visible"}`);
-    } catch (e) {
-        console.error("Error toggling section:", e);
-    }
+    const section = document.getElementById(sectionId);
+    const isVisible = section.style.display === "block";
+    document.querySelectorAll(".form-section, .data-section").forEach(s => s.style.display = "none");
+    section.style.display = isVisible ? "none" : "block";
+    console.log(`Toggled section ${sectionId} to ${isVisible ? "hidden" : "visible"}`);
 }
 
 function updateFormOptions() {
@@ -86,22 +94,28 @@ function updateFormOptions() {
         const subjectCodeEl = document.getElementById("subjectCode");
         const shiftEl = document.getElementById("shift");
         const packetCodeEl = document.getElementById("packetCode");
-        const totalExamsEl = document.getElementById("totalExams");
         const filterTeacherEl = document.getElementById("filterTeacher");
 
-        if (!teacherIdEl || !subjectCodeEl || !shiftEl || !packetCodeEl || !totalExamsEl || !filterTeacherEl) throw new Error("Form options elements missing");
+        if (!teacherIdEl || !subjectCodeEl || !shiftEl || !packetCodeEl || !filterTeacherEl) 
+            throw new Error("Form options elements missing");
 
-        teacherIdEl.innerHTML = '<option value="">Select Teacher</option>' + teachers.map(t => `<option value="${t.id}">${t.name} (${t.id})</option>`).join("");
-        subjectCodeEl.innerHTML = '<option value="">Select Subject Code</option>' + subjectCodes.map(c => `<option value="${c}">${c}</option>`).join("");
-        shiftEl.innerHTML = '<option value="">Select Shift</option>' + shifts.map(s => `<option value="${s}">${s}</option>`).join("");
-        packetCodeEl.innerHTML = '<option value="">Select Packet Code</option>' + packetCodes.map(p => `<option value="${p}">${p}</option>`).join("");
-        totalExamsEl.innerHTML = '<option value="">Select Total Exams</option>' + totalExamsOptions.map(t => `<option value="${t}">${t}</option>`).join("");
-        filterTeacherEl.innerHTML = '<option value="">All Teachers</option>' + teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+        teacherIdEl.innerHTML = '<option value="">Select Teacher</option>' + 
+            teachers.map(t => `<option value="${t.id}">${t.name} (${t.id})</option>`).join("");
+        subjectCodeEl.innerHTML = '<option value="">Select Subject Code</option>' + 
+            subjectCodes.map(c => `<option value="${c}">${c}</option>`).join("");
+        shiftEl.innerHTML = '<option value="">Select Shift</option>' + 
+            shifts.map(s => `<option value="${s}">${s}</option>`).join("");
+        packetCodeEl.innerHTML = '<option value="">Select Packet Code</option>' + 
+            packetCodes.map(p => `<option value="${p}">${p}</option>`).join("");
+        filterTeacherEl.innerHTML = '<option value="">All Teachers</option>' + 
+            teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
 
         document.getElementById("subjectCodesInput").value = subjectCodes.join(", ");
         document.getElementById("shiftsInput").value = shifts.join(", ");
         document.getElementById("packetCodesInput").value = packetCodes.join(", ");
         document.getElementById("totalExamsInput").value = totalExamsOptions.join(", ");
+        
+        loadExamsIntoForm(); // Sync exam scheduler options
     } catch (e) {
         console.error("Error updating form options:", e);
     }
@@ -126,15 +140,17 @@ function addTeacher() {
         }
         
         const teacher = { id: "t" + (teachers.length + 1), name, email, phone };
-        console.log("Adding teacher:", teacher);
-        
         teachers.push(teacher);
         localStorage.setItem("teachers", JSON.stringify(teachers));
-        console.log("Teachers updated:", teachers);
         
         nameEl.value = "";
         emailEl.value = "";
         phoneEl.value = "";
+        
+        // Redirect to main page
+        document.querySelectorAll(".form-section, .data-section").forEach(s => s.style.display = "none");
+        document.querySelectorAll(".data-section").forEach(s => s.style.display = "block");
+        
         loadTeachers();
         updateFormOptions();
         showNotification("Teacher added successfully!");
@@ -208,11 +224,13 @@ function saveTeacherEdit(id) {
 
 function deleteTeacher(id) {
     try {
-        if (confirm("Are you sure? This will also delete all assignments for this teacher.")) {
+        if (confirm("Are you sure? This will also delete all assignments and exams for this teacher.")) {
             teachers = teachers.filter(t => t.id !== id);
             assignments = assignments.filter(a => a.teacherId !== id);
+            exams = exams.filter(e => e.checkingTeacher === id);
             localStorage.setItem("teachers", JSON.stringify(teachers));
             localStorage.setItem("assignments", JSON.stringify(assignments));
+            localStorage.setItem("exams", JSON.stringify(exams));
             console.log("Teacher deleted, ID:", id);
             loadTeachers();
             loadAssignments();
@@ -226,26 +244,42 @@ function deleteTeacher(id) {
 }
 
 function loadTeachers() {
-    try {
-        const tableBody = document.querySelector("#teacherTable tbody");
-        if (!tableBody) throw new Error("Teacher table body not found");
-        
-        tableBody.innerHTML = "";
-        teachers.forEach(teacher => {
-            const row = `<tr>
-                <td data-label="Name">${teacher.name}</td>
-                <td data-label="Email">${teacher.email}</td>
-                <td data-label="Phone">${teacher.phone}</td>
-                <td data-label="Actions">
+    const tableBody = document.querySelector("#teacherTable tbody");
+    tableBody.innerHTML = "";
+    teachers.forEach(teacher => {
+        tableBody.innerHTML += `
+            <tr>
+                <td>${teacher.name}</td>
+                <td>${teacher.email}</td>
+                <td>${teacher.phone}</td>
+                <td>
                     <button class="action-btn edit-btn" onclick="editTeacher('${teacher.id}')">Edit</button>
                     <button class="action-btn delete-btn" onclick="deleteTeacher('${teacher.id}')">Delete</button>
                 </td>
             </tr>`;
-            tableBody.innerHTML += row;
-        });
-        console.log("Teachers loaded:", teachers.length);
+    });
+}
+
+function markAssignmentCompleted(id) {
+    try {
+        const assignment = assignments.find(a => a.id === id);
+        if (!assignment) throw new Error(`Assignment with ID ${id} not found`);
+        
+        if (assignment.status === "Completed") {
+            showNotification("Assignment is already completed!", "error");
+            return;
+        }
+
+        assignment.status = "Completed";
+        localStorage.setItem("assignments", JSON.stringify(assignments));
+        console.log(`Assignment ${id} marked as Completed`);
+        
+        loadAssignments();
+        loadAnalytics(); // Update analytics to reflect the change
+        showNotification("Assignment marked as completed!");
     } catch (e) {
-        console.error("Error loading teachers:", e);
+        console.error("Error marking assignment completed:", e);
+        alert("Failed to mark assignment as completed. Check console for details.");
     }
 }
 
@@ -280,18 +314,15 @@ function saveSetup() {
 
 function saveAssignment(assignmentId) {
     try {
-        console.log("saveAssignment triggered with ID:", assignmentId);
-
         const teacherIdEl = document.getElementById("teacherId");
         const subjectCodeEl = document.getElementById("subjectCode");
         const shiftEl = document.getElementById("shift");
         const packetCodeEl = document.getElementById("packetCode");
         const totalExamsEl = document.getElementById("totalExams");
-        const examTypeEl = document.getElementById("examType");
         const isExternalEl = document.getElementById("isExternal");
         const statusEl = document.getElementById("status");
 
-        if (!teacherIdEl || !subjectCodeEl || !shiftEl || !packetCodeEl || !totalExamsEl || !examTypeEl || !isExternalEl || !statusEl) {
+        if (!teacherIdEl || !subjectCodeEl || !shiftEl || !packetCodeEl || !totalExamsEl || !isExternalEl || !statusEl) {
             throw new Error("Assignment form elements missing");
         }
 
@@ -300,15 +331,19 @@ function saveAssignment(assignmentId) {
         const shift = shiftEl.value;
         const packetCode = packetCodeEl.value;
         const totalExams = totalExamsEl.value;
-        const examType = examTypeEl.value.trim();
         const isExternal = isExternalEl.checked;
         const status = statusEl.value;
 
-        console.log("Form values:", { teacherId, subjectCode, shift, packetCode, totalExams, examType, isExternal, status });
-
-        if (!teacherId || !subjectCode || !shift || !packetCode || !totalExams || !examType || !status) {
+        if (!teacherId || !subjectCode || !shift || !packetCode || !totalExams || !status) {
             console.error("Validation failed - Missing required fields");
             alert("All fields are required!");
+            return;
+        }
+
+        const totalExamsNum = parseInt(totalExams);
+        if (isNaN(totalExamsNum) || totalExamsNum <= 0) {
+            console.error("Validation failed - Invalid total exams");
+            alert("Total Exams must be a positive number!");
             return;
         }
 
@@ -318,8 +353,7 @@ function saveAssignment(assignmentId) {
             subjectCode,
             shift,
             packetCode,
-            totalExams: parseInt(totalExams) || 0,
-            examType,
+            totalExams: totalExamsNum,
             isExternal,
             status: status || "Assigned",
             date: new Date().toISOString().split("T")[0],
@@ -327,33 +361,28 @@ function saveAssignment(assignmentId) {
             examReturned: assignmentId ? (assignments.find(a => a.id === assignmentId)?.examReturned || false) : false
         };
 
-        console.log("Assignment to save:", assignment);
-
         if (assignmentId) {
             const index = assignments.findIndex(a => a.id === assignmentId);
-            if (index !== -1) {
-                assignments[index] = assignment;
-                console.log("Updated assignment at index:", index);
-            } else {
-                throw new Error(`Assignment ID ${assignmentId} not found`);
-            }
+            if (index !== -1) assignments[index] = assignment;
+            else throw new Error(`Assignment ID ${assignmentId} not found`);
         } else {
             assignments.push(assignment);
-            console.log("Added new assignment. Total:", assignments.length);
         }
 
         localStorage.setItem("assignments", JSON.stringify(assignments));
-        console.log("localStorage updated:", JSON.parse(localStorage.getItem("assignments")));
         
         teacherIdEl.value = "";
         subjectCodeEl.value = "";
         shiftEl.value = "";
         packetCodeEl.value = "";
         totalExamsEl.value = "";
-        examTypeEl.value = "";
         isExternalEl.checked = false;
         statusEl.value = "Assigned";
-        toggleSection("assignmentFormSection");
+        
+        // Redirect to main page
+        document.querySelectorAll(".form-section, .data-section").forEach(s => s.style.display = "none");
+        document.querySelectorAll(".data-section").forEach(s => s.style.display = "block");
+        
         loadAssignments();
         loadAnalytics();
         showNotification("Assignment saved successfully!");
@@ -401,6 +430,9 @@ function exportToCSV(type) {
                 return acc;
             }, {});
             rows = Object.values(records).map(r => `${r.year},${r.teacher},${r.subject},${r.exams}`).join("\n");
+        } else if (type === "exams") {
+            headers = "ID,Title,Subject,Shift,Date,CheckingTeacher,Deadline,Status\n";
+            rows = exams.map(e => `${e.id},${e.title},${e.subject},${e.shift},${e.date},${teachers.find(t => t.id === e.checkingTeacher)?.name || "Unknown"},${e.checkingDeadline},${e.status}`).join("\n");
         } else {
             throw new Error("Invalid export type");
         }
@@ -432,7 +464,6 @@ function editAssignment(id) {
         const shiftEl = document.getElementById("shift");
         const packetCodeEl = document.getElementById("packetCode");
         const totalExamsEl = document.getElementById("totalExams");
-        const examTypeEl = document.getElementById("examType");
         const isExternalEl = document.getElementById("isExternal");
         const statusEl = document.getElementById("status");
         const saveBtn = document.getElementById("saveAssignmentBtn");
@@ -442,7 +473,6 @@ function editAssignment(id) {
         shiftEl.value = assignment.shift || "";
         packetCodeEl.value = assignment.packetCode || "";
         totalExamsEl.value = assignment.totalExams || "";
-        examTypeEl.value = assignment.examType || "";
         isExternalEl.checked = assignment.isExternal || false;
         statusEl.value = assignment.status || "Assigned";
         saveBtn.textContent = "Save Changes";
@@ -469,90 +499,142 @@ function deleteAssignment(id) {
 }
 
 function loadAssignments() {
-    try {
-        const tableBody = document.querySelector("#assignmentTable tbody");
-        const searchInput = document.getElementById("searchInput");
-        const filterTeacher = document.getElementById("filterTeacher");
-        const filterStatus = document.getElementById("filterStatus");
-        if (!tableBody || !searchInput || !filterTeacher || !filterStatus) throw new Error("Assignment table or filter elements not found");
+    const tableBody = document.querySelector("#assignmentTable tbody");
+    let filteredAssignments = [...assignments];
+    const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+    const teacherFilter = document.getElementById("filterTeacher").value;
+    const statusFilter = document.getElementById("filterStatus").value;
 
-        let filteredAssignments = [...assignments];
-        const searchTerm = searchInput.value.toLowerCase();
-        const teacherFilter = filterTeacher.value;
-        const statusFilter = filterStatus.value;
+    if (searchTerm) filteredAssignments = filteredAssignments.filter(a => 
+        teachers.find(t => t.id === a.teacherId)?.name.toLowerCase().includes(searchTerm));
+    if (teacherFilter) filteredAssignments = filteredAssignments.filter(a => a.teacherId === teacherFilter);
+    if (statusFilter) filteredAssignments = filteredAssignments.filter(a => a.status === statusFilter);
 
-        if (searchTerm) {
-            filteredAssignments = filteredAssignments.filter(a => 
-                teachers.find(t => t.id === a.teacherId)?.name.toLowerCase().includes(searchTerm) ||
-                a.subjectCode.toLowerCase().includes(searchTerm) ||
-                a.examType.toLowerCase().includes(searchTerm)
-            );
-        }
-        if (teacherFilter) {
-            filteredAssignments = filteredAssignments.filter(a => a.teacherId === teacherFilter);
-        }
-        if (statusFilter) {
-            filteredAssignments = filteredAssignments.filter(a => a.status === statusFilter);
-        }
-
-        tableBody.innerHTML = "";
-        console.log("Rendering filtered assignments:", filteredAssignments);
-
-        if (filteredAssignments.length === 0) {
-            tableBody.innerHTML = "<tr><td colspan='10'>No assignments found.</td></tr>";
-        } else {
-            filteredAssignments.forEach(assignment => {
-                const teacher = teachers.find(t => t.id === assignment.teacherId)?.name || "Unknown";
-                const row = `<tr>
-                    <td data-label="Teacher">${teacher}</td>
-                    <td data-label="Subject">${assignment.subjectCode}</td>
-                    <td data-label="Shift">${assignment.shift}</td>
-                    <td data-label="Packet">${assignment.packetCode}</td>
-                    <td data-label="Exams">${assignment.totalExams}</td>
-                    <td data-label="Type">${assignment.examType}</td>
-                    <td data-label="External">${assignment.isExternal ? "Yes" : "No"}</td>
-                    <td data-label="Status">${assignment.status}</td>
-                    <td data-label="Returned">${assignment.examReturned ? "Yes" : "No"}</td>
-                    <td data-label="Actions">
-                        <button class="action-btn edit-btn" onclick="editAssignment('${assignment.id}')">Edit</button>
-                        <button class="action-btn delete-btn" onclick="deleteAssignment('${assignment.id}')">Delete</button>
-                        <button class="action-btn" onclick="updateExamReturnStatus('${assignment.id}')">${assignment.examReturned ? "Mark Unreturned" : "Mark Returned"}</button>
-                    </td>
-                </tr>`;
-                tableBody.innerHTML += row;
-            });
-        }
-    } catch (e) {
-        console.error("Error loading assignments:", e);
-    }
+    tableBody.innerHTML = "";
+    filteredAssignments.forEach(a => {
+        const teacher = teachers.find(t => t.id === a.teacherId)?.name || "Unknown";
+        tableBody.innerHTML += `
+            <tr>
+                <td>${teacher}</td>
+                <td>${a.subjectCode}</td>
+                <td>${a.shift}</td>
+                <td>${a.packetCode}</td> <!-- Added Packet Code -->
+                <td>${a.totalExams}</td>
+                <td>${a.status}</td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="editAssignment('${a.id}')">Edit</button>
+                    <button class="action-btn delete-btn" onclick="deleteAssignment('${a.id}')">Delete</button>
+                    <button class="action-btn mark-completed-btn" onclick="markAssignmentCompleted('${a.id}')" ${a.status === "Completed" ? "disabled" : ""}>
+                        Mark Completed
+                    </button>
+                </td>
+            </tr>`;
+    });
 }
 
 function loadAnalytics() {
     try {
-        const tableBody = document.querySelector("#analyticsTable tbody");
-        if (!tableBody) throw new Error("Analytics table body not found");
+        const analyticsSection = document.getElementById("analyticsSection");
+        const totalExamsCanvas = document.getElementById("totalExamsChart");
+        const completedExamsCanvas = document.getElementById("completedExamsChart");
+        const workloadCanvas = document.getElementById("workloadChart");
 
-        tableBody.innerHTML = "";
+        if (!totalExamsCanvas || !completedExamsCanvas || !workloadCanvas) {
+            console.error("Chart canvases not found in DOM");
+            analyticsSection.innerHTML = "<h2>Analytics</h2><p>Error: Chart elements not found.</p>";
+            return;
+        }
+
+        // Check if data is available
+        if (teachers.length === 0 || assignments.length === 0) {
+            console.warn("No data available for analytics");
+            analyticsSection.innerHTML = "<h2>Analytics</h2><p>No data available yet. Add teachers and assignments to see analytics.</p>";
+            return;
+        }
+
         const teacherStats = teachers.map(teacher => {
             const teacherAssignments = assignments.filter(a => a.teacherId === teacher.id);
             const totalExams = teacherAssignments.reduce((sum, a) => sum + a.totalExams, 0);
             const completedExams = teacherAssignments.filter(a => a.status === "Completed").reduce((sum, a) => sum + a.totalExams, 0);
-            return { name: teacher.name, totalExams, completedExams };
+            const scheduledExams = exams.filter(e => e.checkingTeacher === teacher.id).length;
+            return { name: teacher.name, totalExams, completedExams, scheduledExams };
         });
 
-        teacherStats.forEach(stat => {
-            const row = `<tr>
-                <td data-label="Teacher">${stat.name}</td>
-                <td data-label="Total Exams">${stat.totalExams}</td>
-                <td data-label="Completed Exams">${stat.completedExams}</td>
-                <td data-label="Workload">${((stat.totalExams / (assignments.reduce((sum, a) => sum + a.totalExams, 0) || 1)) * 100).toFixed(2)}%</td>
-            </tr>`;
-            tableBody.innerHTML += row;
+        const labels = teacherStats.map(stat => stat.name);
+        const totalExamsData = teacherStats.map(stat => stat.totalExams);
+        const completedExamsData = teacherStats.map(stat => stat.completedExams);
+        const workloadData = teacherStats.map(stat => 
+            ((stat.totalExams / (assignments.reduce((sum, a) => sum + a.totalExams, 0) || 1)) * 100).toFixed(2)
+        );
+
+        console.log("Analytics Data:", { labels, totalExamsData, completedExamsData, workloadData });
+
+        // Destroy existing charts if they exist
+        if (totalExamsChart) totalExamsChart.destroy();
+        if (completedExamsChart) completedExamsChart.destroy();
+        if (workloadChart) workloadChart.destroy();
+
+        // Total Exams Bar Chart
+        totalExamsChart = new Chart(totalExamsCanvas, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Total Exams",
+                    data: totalExamsData,
+                    backgroundColor: "#3498db",
+                    borderColor: "#2980b9",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: true } }
+            }
         });
 
-        console.log("Analytics loaded");
+        // Completed Exams Bar Chart
+        completedExamsChart = new Chart(completedExamsCanvas, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Completed Exams",
+                    data: completedExamsData,
+                    backgroundColor: "#2ecc71",
+                    borderColor: "#27ae60",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: true } }
+            }
+        });
+
+        // Workload Pie Chart
+        workloadChart = new Chart(workloadCanvas, {
+            type: "pie",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Workload %",
+                    data: workloadData,
+                    backgroundColor: ["#e74c3c", "#f1c40f", "#9b59b6", "#3498db", "#2ecc71"],
+                    borderColor: "#fff",
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                plugins: { legend: { position: "right" } }
+            }
+        });
+
+        console.log("Analytics charts rendered successfully");
     } catch (e) {
         console.error("Error loading analytics:", e);
+        const analyticsSection = document.getElementById("analyticsSection");
+        analyticsSection.innerHTML = "<h2>Analytics</h2><p>Error loading analytics. Check console for details.</p>";
     }
 }
 
@@ -588,4 +670,118 @@ function showRecords() {
     } catch (e) {
         console.error("Error showing records:", e);
     }
+}
+
+// Exam Scheduler Functions
+function loadExamsIntoForm() {
+    try {
+        const subjectEl = document.getElementById("examSubject");
+        const shiftEl = document.getElementById("examShift");
+        const teacherEl = document.getElementById("checkingTeacher");
+        
+        subjectEl.innerHTML = '<option value="">Select Subject</option>' + subjectCodes.map(c => `<option value="${c}">${c}</option>`).join("");
+        shiftEl.innerHTML = '<option value="">Select Shift</option>' + shifts.map(s => `<option value="${s}">${s}</option>`).join("");
+        teacherEl.innerHTML = '<option value="">Select Teacher</option>' + teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+    } catch (e) {
+        console.error("Error loading exams into form:", e);
+    }
+}
+
+function saveExam() {
+    try {
+        const title = document.getElementById("examTitle").value.trim();
+        const subject = document.getElementById("examSubject").value;
+        const shift = document.getElementById("examShift").value;
+        const date = document.getElementById("examDate").value;
+        const checkingTeacher = document.getElementById("checkingTeacher").value;
+        const checkingDeadline = document.getElementById("checkingDeadline").value;
+        const status = document.getElementById("examStatus").value;
+
+        if (!title || !subject || !shift || !date || !checkingTeacher || !checkingDeadline || !status) {
+            alert("All fields are required!");
+            return;
+        }
+
+        const exam = {
+            id: "e" + (exams.length + 1),
+            title,
+            subject,
+            shift,
+            date,
+            checkingTeacher,
+            checkingDeadline,
+            status,
+            year: currentYear
+        };
+
+        exams.push(exam);
+        localStorage.setItem("exams", JSON.stringify(exams));
+        console.log("Exam saved:", exam);
+
+        document.getElementById("examTitle").value = "";
+        document.getElementById("examSubject").value = "";
+        document.getElementById("examShift").value = "";
+        document.getElementById("examDate").value = "";
+        document.getElementById("checkingTeacher").value = "";
+        document.getElementById("checkingDeadline").value = "";
+        document.getElementById("examStatus").value = "Pending";
+        toggleSection("examSchedulerSection");
+        showNotification("Exam schedule saved successfully!");
+        loadAnalytics();
+    } catch (e) {
+        console.error("Error saving exam:", e);
+        alert("Failed to save exam. Check console for details.");
+    }
+}
+
+function showExamCalendar() {
+    try {
+        const calendarDiv = document.getElementById("examCalendar");
+        calendarDiv.style.display = "block";
+        calendarDiv.innerHTML = "<h3>Exam Calendar</h3>";
+
+        const examByDate = {};
+        exams.forEach(e => {
+            examByDate[e.date] = examByDate[e.date] || [];
+            examByDate[e.date].push(e);
+        });
+
+        let calendarHTML = "<table><thead><tr><th>Date</th><th>Exams</th></tr></thead><tbody>";
+        for (const [date, examsOnDate] of Object.entries(examByDate)) {
+            calendarHTML += `<tr><td>${date}</td><td>${examsOnDate.map(e => `${e.title} (${e.shift}, ${teachers.find(t => t.id === e.checkingTeacher)?.name || "Unknown"})`).join("<br>")}</td></tr>`;
+        }
+        calendarHTML += "</tbody></table>";
+        calendarDiv.innerHTML += calendarHTML;
+    } catch (e) {
+        console.error("Error showing exam calendar:", e);
+    }
+}
+
+function toggleSettings() {
+    const modal = document.getElementById("settingsModal");
+    modal.style.display = modal.style.display === "block" ? "none" : "block";
+}
+
+// New function to show only Assignments
+function showAssignmentsOnly() {
+    document.querySelectorAll(".form-section, .data-section").forEach(s => s.style.display = "none");
+    document.getElementById("assignmentsSection").style.display = "block";
+    loadAssignments();
+}
+
+// New function to show only Analytics with graphs
+function showAnalyticsOnly() {
+    document.querySelectorAll(".form-section, .data-section").forEach(s => s.style.display = "none");
+    const analyticsSection = document.getElementById("analyticsSection");
+    analyticsSection.style.display = "block";
+    loadAnalytics(); // Load charts when section is shown
+}
+
+function goToMainPage() {
+    document.querySelectorAll(".form-section, .data-section").forEach(s => s.style.display = "none");
+    document.getElementById("teachersSection").style.display = "block";
+    document.getElementById("analyticsSection").style.display = "block";
+    loadTeachers();
+    loadAnalytics();
+    console.log("Redirected to main page with Teachers and Analytics");
 }
