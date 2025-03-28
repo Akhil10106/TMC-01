@@ -129,22 +129,33 @@ export async function saveSetupData(subjectCodesInput, shiftsInput, packetCodesI
     }
 }
 
+// In dataOperations.js
 export async function addTeacher(name, email, phone) {
-    UIOps.showLoading();
     try {
+        UIOps.showLoading();
         const errors = validateTeacherForm(name, email, phone);
         if (errors) throw new Error(errors.join(", "));
         
+        // Add additional validation
+        if (!name || !email) throw new Error("Name and email are required");
         if (teachers.some(t => t.email.toLowerCase() === email.toLowerCase())) {
             throw new Error("Email already exists");
         }
 
         const newTeacherRef = push(ref(database, "teachers"));
-        const teacher = { id: newTeacherRef.key, name, email, phone: phone || "" };
+        const teacher = { 
+            id: newTeacherRef.key, 
+            name: name.trim(), 
+            email: email.trim(), 
+            phone: phone?.trim() || "",
+            createdAt: new Date().toISOString()  // Add timestamp
+        };
+        
         await set(newTeacherRef, teacher);
         UIOps.showNotification("Teacher added successfully!");
         return true;
     } catch (error) {
+        console.error("Add teacher error:", error);  // Add logging
         UIOps.showNotification(`Failed to add teacher: ${error.message}`, "error");
         return false;
     } finally {
