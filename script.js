@@ -16,6 +16,35 @@ function initializeTheme() {
     document.getElementById("themeSelect").value = theme;
 }
 
+function setupMobileMenu() {
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sidebar = document.getElementById("sidebar");
+    const mainContent = document.querySelector(".main-content");
+
+    if (hamburgerBtn && sidebar) {
+        hamburgerBtn.addEventListener("click", () => {
+            sidebar.classList.toggle("active");
+            // Optional: Prevent scrolling on main content when sidebar is open
+            if (sidebar.classList.contains("active")) {
+                document.body.style.overflow = "hidden";
+            } else {
+                document.body.style.overflow = "auto";
+            }
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener("click", (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(e.target) && 
+                !hamburgerBtn.contains(e.target) && 
+                sidebar.classList.contains("active")) {
+                sidebar.classList.remove("active");
+                document.body.style.overflow = "auto";
+            }
+        });
+    }
+}
+
 function handleUserLogin(user) {
     if (!user) return;
     if (user.email === "akhil@gmail.com") {
@@ -267,7 +296,18 @@ function setupEventListeners() {
         document.documentElement.setAttribute("data-theme", theme);
         localStorage.setItem("theme", theme);
     });
+    setupMobileMenu();
 }
+
+function handleResize() {
+    const sidebar = document.getElementById("sidebar");
+    if (window.innerWidth > 768 && sidebar.classList.contains("active")) {
+        sidebar.classList.remove("active");
+        document.body.style.overflow = "auto";
+    }
+}
+
+window.addEventListener("resize", debounce(handleResize, 100));
 
 window.onload = () => {
     UIOps.showLoading();
