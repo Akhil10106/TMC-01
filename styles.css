@@ -2446,7 +2446,6 @@ textarea:focus {
     outline-offset: 2px;
 }
 
-/* In styles.css */
 
 /* Base table styling */
 table {
@@ -2529,7 +2528,6 @@ tbody tr:hover {
     background-color: darken(var(--accent-color, #007bff), 10%);
 }
 
-/* In styles.css */
 
 /* Base button styling */
 .action-btn {
