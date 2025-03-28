@@ -68,6 +68,11 @@ export function loadTeachers(teachers) {
 }
 
 export function loadAssignments(assignments, teachers, page) {
+    // Add memoization
+    const cacheKey = `${page}_${JSON.stringify({ search: document.getElementById("searchInput")?.value })}`;
+    if (loadAssignments.cache?.[cacheKey]) {
+        return loadAssignments.cache[cacheKey];
+    }
     currentPage = Math.max(1, page);
     let filtered = assignments;
 
