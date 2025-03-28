@@ -18,10 +18,21 @@ export const auth = getAuth(app);
 
 // Sanitize input to prevent injection
 function sanitizeInput(input) {
-    return input.replace(/[<>"']/g, '');
+    // Enhanced sanitization
+    const sanitized = input
+        .replace(/[<>"'&]/g, '')  // Prevent XSS
+        .replace(/\s+/g, ' ')     // Normalize whitespace
+        .trim();
+    return sanitized.substring(0, 100);  // Add length limit
 }
 
 export function login(email, password) {
+    if (!email || !password) {
+        throw new Error("Email and password are required");
+    }
+    if (password.length < 6) {
+        throw new Error("Password must be at least 6 characters");
+    }
     const sanitizedEmail = sanitizeInput(email);
     const sanitizedPassword = sanitizeInput(password);
     console.log("Attempting login with email:", sanitizedEmail);
