@@ -1,3 +1,5 @@
+// script.js
+
 import * as Auth from "./auth.js";
 import * as DataOps from "./dataOperations.js";
 import * as UIOps from "./uiOperations.js";
@@ -19,20 +21,13 @@ function initializeTheme() {
 function setupMobileMenu() {
     const hamburgerBtn = document.getElementById("hamburgerBtn");
     const sidebar = document.getElementById("sidebar");
-    const mainContent = document.querySelector(".main-content");
 
     if (hamburgerBtn && sidebar) {
         hamburgerBtn.addEventListener("click", () => {
             sidebar.classList.toggle("active");
-            // Optional: Prevent scrolling on main content when sidebar is open
-            if (sidebar.classList.contains("active")) {
-                document.body.style.overflow = "hidden";
-            } else {
-                document.body.style.overflow = "auto";
-            }
+            document.body.style.overflow = sidebar.classList.contains("active") ? "hidden" : "auto";
         });
 
-        // Close sidebar when clicking outside on mobile
         document.addEventListener("click", (e) => {
             if (window.innerWidth <= 768 && 
                 !sidebar.contains(e.target) && 
@@ -47,7 +42,14 @@ function setupMobileMenu() {
 
 function handleUserLogin(user) {
     if (!user) return;
-    if (user.email === "akhil@gmail.com") {
+
+    // Define admin credentials
+    const adminEmail = "akhilgoel985@gmail.com";
+
+    // Check if the user is the admin (password check is handled in login)
+    const isAdmin = user.email === adminEmail;
+
+    if (isAdmin) {
         document.getElementById("dashboardContainer").style.display = "block";
         document.getElementById("teacherPanel").style.display = "none";
         DataOps.loadInitialData();
@@ -79,56 +81,53 @@ function resetAssignmentForm() {
 }
 
 function setupEventListeners() {
+    // Role Selection Event Listeners
+    document.getElementById("loginAsAdminBtn").addEventListener("click", () => {
+        document.getElementById("roleSelectionModal").style.display = "none";
+        document.getElementById("loginModal").style.display = "flex";
+    });
+
+    document.getElementById("loginAsTeacherBtn").addEventListener("click", () => {
+        UIOps.showNotification("Teacher login coming soon!", "success");
+    });
+
+    document.getElementById("loginAsStudentBtn").addEventListener("click", () => {
+        window.location.href = "https://lakshyauniyal.github.io/tmc/login.html";
+    });
+
+    // Login Event Listener (Admin only)
     document.getElementById("loginForm").addEventListener("submit", async e => {
         e.preventDefault();
         const email = document.getElementById("loginEmail").value.trim();
         const password = document.getElementById("loginPassword").value.trim();
-        try {
-            UIOps.showLoading();
-            const user = await Auth.login(email, password);
-            document.getElementById("loginModal").style.display = "none";
-            handleUserLogin(user);
-            UIOps.showNotification("Login successful!");
-        } catch (error) {
-            if (error.code === "auth/invalid-login-credentials") {
-                document.getElementById("loginError").textContent = "Account not found. Please create an account.";
-                document.getElementById("loginError").style.display = "block";
-                setTimeout(() => {
-                    document.getElementById("loginModal").style.display = "none";
-                    document.getElementById("registerModal").style.display = "flex";
-                    document.getElementById("loginError").style.display = "none"; // Clear error
-                }, 2000); // Show message for 2 seconds before redirecting
-            } else {
-                document.getElementById("loginError").textContent = error.message;
-                document.getElementById("loginError").style.display = "block";
-            }
-        } finally {
-            UIOps.hideLoading();
-        }
-    });
+        
+        // Define admin credentials
+        const adminEmail = "akhilgoel985@gmail.com";
+        const adminPassword = "123456";
 
-    document.getElementById("registerForm").addEventListener("submit", async e => {
-        e.preventDefault();
-        const email = document.getElementById("registerEmail").value.trim();
-        const password = document.getElementById("registerPassword").value.trim();
-        const confirm = document.getElementById("confirmPassword").value.trim();
-        if (password !== confirm) {
-            document.getElementById("registerError").textContent = "Passwords do not match";
-            document.getElementById("registerError").style.display = "block";
-            return;
-        }
-        try {
-            UIOps.showLoading();
-            await Auth.register(email, password);
-            const user = await Auth.login(email, password);
-            document.getElementById("registerModal").style.display = "none";
-            handleUserLogin(user);
-            UIOps.showNotification("Registration successful!");
-        } catch (error) {
-            document.getElementById("registerError").textContent = error.message;
-            document.getElementById("registerError").style.display = "block";
-        } finally {
-            UIOps.hideLoading();
+        // Check if the entered credentials match the admin credentials
+        if (email === adminEmail && password === adminPassword) {
+            try {
+                UIOps.showLoading();
+                const user = await Auth.login(email, password);
+                document.getElementById("loginModal").style.display = "none";
+                document.getElementById("dashboardContainer").style.display = "block";
+                document.getElementById("teacherPanel").style.display = "none";
+                DataOps.loadInitialData();
+                UIOps.showNotification("Admin login successful!");
+            } catch (error) {
+                if (error.code === "auth/invalid-login-credentials") {
+                    document.getElementById("loginError").textContent = "Invalid credentials. Please try again.";
+                } else {
+                    document.getElementById("loginError").textContent = error.message;
+                }
+                document.getElementById("loginError").style.display = "block";
+            } finally {
+                UIOps.hideLoading();
+            }
+        } else {
+            document.getElementById("loginError").textContent = "Only admin can log in here.";
+            document.getElementById("loginError").style.display = "block";
         }
     });
 
@@ -137,7 +136,8 @@ function setupEventListeners() {
             UIOps.showLoading();
             await Auth.logout();
             document.getElementById("dashboardContainer").style.display = "none";
-            document.getElementById("loginModal").style.display = "flex";
+            document.getElementById("loginModal").style.display = "none";
+            document.getElementById("roleSelectionModal").style.display = "flex";
             UIOps.showNotification("Logged out successfully!");
         } catch (error) {
             UIOps.showNotification("Logout failed: " + error.message, "error");
@@ -148,16 +148,7 @@ function setupEventListeners() {
 
     document.getElementById("closeLoginBtn").addEventListener("click", () => {
         document.getElementById("loginModal").style.display = "none";
-    });
-    document.getElementById("closeRegisterBtn").addEventListener("click", () => {
-        document.getElementById("registerModal").style.display = "none";
-    });
-    document.getElementById("closeSettingsBtn").addEventListener("click", () => {
-        document.getElementById("settingsModal").style.display = "none";
-    });
-    document.getElementById("showLoginLink").addEventListener("click", () => {
-        document.getElementById("registerModal").style.display = "none";
-        document.getElementById("loginModal").style.display = "flex";
+        document.getElementById("roleSelectionModal").style.display = "flex";
     });
 
     document.getElementById("addTeacherBtn").addEventListener("click", () => {
@@ -284,18 +275,24 @@ function setupEventListeners() {
         }
     });
 
-    document.getElementById("prevPageBtn").addEventListener("click", () => UIOps.loadAssignments(DataOps.getAssignments(), DataOps.getTeachers(), UIOps.currentPage - 1));
-    document.getElementById("nextPageBtn").addEventListener("click", () => UIOps.loadAssignments(DataOps.getAssignments(), DataOps.getTeachers(), UIOps.currentPage + 1));
-    document.getElementById("searchInput").addEventListener("input", debounce(() => UIOps.loadAssignments(DataOps.getAssignments(), DataOps.getTeachers(), 1), 300));
+    document.getElementById("prevPageBtn").addEventListener("click", () => 
+        UIOps.loadAssignments(DataOps.getAssignments(), DataOps.getTeachers(), UIOps.currentPage - 1));
+    document.getElementById("nextPageBtn").addEventListener("click", () => 
+        UIOps.loadAssignments(DataOps.getAssignments(), DataOps.getTeachers(), UIOps.currentPage + 1));
+    document.getElementById("searchInput").addEventListener("input", debounce(() => 
+        UIOps.loadAssignments(DataOps.getAssignments(), DataOps.getTeachers(), 1), 300));
 
-    document.getElementById("exportTeachersBtn").addEventListener("click", () => UIOps.exportToCSV("teachers", DataOps.getTeachers(), DataOps.getAssignments()));
-    document.getElementById("exportAssignmentsBtn").addEventListener("click", () => UIOps.exportToCSV("assignments", DataOps.getTeachers(), DataOps.getAssignments()));
+    document.getElementById("exportTeachersBtn").addEventListener("click", () => 
+        UIOps.exportToCSV("teachers", DataOps.getTeachers(), DataOps.getAssignments()));
+    document.getElementById("exportAssignmentsBtn").addEventListener("click", () => 
+        UIOps.exportToCSV("assignments", DataOps.getTeachers(), DataOps.getAssignments()));
 
     document.getElementById("themeSelect").addEventListener("change", e => {
         const theme = e.target.value;
         document.documentElement.setAttribute("data-theme", theme);
         localStorage.setItem("theme", theme);
     });
+
     setupMobileMenu();
 }
 
@@ -309,16 +306,65 @@ function handleResize() {
 
 window.addEventListener("resize", debounce(handleResize, 100));
 
+function setupTeacherMobileMenu() {
+    const hamburgerBtn = document.getElementById("teacherHamburgerBtn");
+    const sidebar = document.getElementById("teacherSidebar");
+
+    if (hamburgerBtn && sidebar) {
+        hamburgerBtn.addEventListener("click", () => {
+            sidebar.classList.toggle("active");
+            document.body.style.overflow = sidebar.classList.contains("active") ? "hidden" : "auto";
+        });
+
+        document.addEventListener("click", (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(e.target) && 
+                !hamburgerBtn.contains(e.target) && 
+                sidebar.classList.contains("active")) {
+                sidebar.classList.remove("active");
+                document.body.style.overflow = "auto";
+            }
+        });
+    }
+}
+
+function setupTeacherEventListeners() {
+    document.getElementById("teacherAssignmentsBtn").addEventListener("click", () => {
+        UIOps.toggleTeacherSection("teacherAssignmentsSection");
+    });
+    document.getElementById("teacherAnalyticsBtn").addEventListener("click", () => {
+        UIOps.toggleTeacherSection("teacherAnalyticsSection");
+        UIOps.loadTeacherAnalytics(DataOps.getAssignments(), Auth.getCurrentUser().uid);
+    });
+    document.getElementById("teacherLogoutBtn").addEventListener("click", Auth.logout);
+
+    document.getElementById("teacherPrevPageBtn").addEventListener("click", () => 
+        UIOps.loadTeacherAssignments(DataOps.getAssignments(), Auth.getCurrentUser().uid, UIOps.teacherCurrentPage - 1));
+    document.getElementById("teacherNextPageBtn").addEventListener("click", () => 
+        UIOps.loadTeacherAssignments(DataOps.getAssignments(), Auth.getCurrentUser().uid, UIOps.teacherCurrentPage + 1));
+    document.getElementById("teacherSearchInput").addEventListener("input", debounce(() => 
+        UIOps.loadTeacherAssignments(DataOps.getAssignments(), Auth.getCurrentUser().uid, 1), 300));
+
+    document.querySelector("#teacherPanel .main-content").addEventListener("click", async e => {
+        const target = e.target;
+        if (target.classList.contains("mark-completed-btn")) {
+            await DataOps.markAssignmentCompleted(target.dataset.id);
+        }
+    });
+}
+
 window.onload = () => {
     UIOps.showLoading();
     Auth.onAuthChange(user => {
         if (user) {
+            document.getElementById("roleSelectionModal").style.display = "none";
             document.getElementById("loginModal").style.display = "none";
             handleUserLogin(user);
         } else {
             document.getElementById("dashboardContainer").style.display = "none";
             document.getElementById("teacherPanel").style.display = "none";
-            document.getElementById("loginModal").style.display = "flex";
+            document.getElementById("loginModal").style.display = "none";
+            document.getElementById("roleSelectionModal").style.display = "flex";
         }
         UIOps.hideLoading();
     });
